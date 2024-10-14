@@ -1,12 +1,8 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
-
-	"github.com/go-resty/resty/v2"
 )
 
 // Structure pour stocker les données d'une carte
@@ -23,7 +19,7 @@ type PokemonSet struct {
 
 // Fonction pour récupérer le set de cartes de l'API Pokémon TCG
 func fetchPokemonSet(setName string) (PokemonSet, error) {
-	client := resty.New()
+	/*client := resty.New()
 	apiUrl := fmt.Sprintf("https://api.pokemontcg.io/v2/sets?q=name:%s", setName)
 	// https://api.pokemontcg.io/v2/sets?q=name:Jungle
 
@@ -71,13 +67,14 @@ func fetchPokemonSet(setName string) (PokemonSet, error) {
 	}
 
 	// Retourne le set de cartes avec le nom du set
-	return PokemonSet{Name: setName, Cards: cards}, nil
+	return PokemonSet{Name: setName, Cards: cards}, nil*/
+	return PokemonSet{}, nil
 }
 
 // Handler pour la route API /pokemon-set
 func pokemonSetHandler(w http.ResponseWriter, r *http.Request) {
 	// Récupérer le nom du set depuis les paramètres de requête
-	setName := r.URL.Query().Get("name")
+	/*setName := r.URL.Query().Get("name")
 	if setName == "" {
 		http.Error(w, "Le nom du set est requis.", http.StatusBadRequest)
 		return
@@ -92,12 +89,24 @@ func pokemonSetHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Convertir la réponse en JSON et l'envoyer au frontend
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(pokemonSet)
+	json.NewEncoder(w).Encode(pokemonSet)*/
 }
 
 func main() {
 	http.HandleFunc("/pokemon-set", pokemonSetHandler) // Route pour récupérer un set Pokémon
 
-	fmt.Println("Serveur démarré sur : http://localhost:8080")
+	log.Println("Server starting on port 8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
+	
+	// Pour éviter les problèmes de CORS
+	/*corsOpts := handlers.CORS(
+		handlers.AllowedOrigins([]string{"*"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
+		handlers.AllowedHeaders([]string{"Accept", "Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization"}),
+		handlers.AllowCredentials(),
+	)
+
+	if err := http.ListenAndServe("0.0.0.0:8080", corsOpts(router)); err != nil {
+		log.Fatalf("Error starting server: %s\n", err)
+	}*/
 }
