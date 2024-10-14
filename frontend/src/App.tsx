@@ -41,9 +41,59 @@ const useWallet = () => {
 
 export const App = () => {
   const wallet = useWallet()
+  const [collectionName, setCollectionName] = useState('')
+  
+  // Gestion de la création d'une nouvelle collection
+  const handleCreateCollection = async () => {
+    if (!wallet || !wallet.contract) return
+    try {
+      // Appel au backend pour récupérer les données de la collection via l'API Pokémon TCG
+      const pokemonSetData = await fetch(`/api/pokemon-set?name=${collectionName}`).then(res => res.json())
+
+      const imgURIs = pokemonSetData.cards.map((card: any) => card.imageUrl)
+      const cardCount = imgURIs.length
+
+      // Appel du smart contract pour créer la collection
+      await wallet.contract.createCollection(pokemonSetData.name, cardCount, imgURIs)
+      alert('Collection créée avec succès !')
+    } catch (error) {
+      console.error('Erreur lors de la création de la collection:', error)
+    }
+  }
+
   return (
     <div className={styles.body}>
       <h1>Welcome to Pokémon TCG</h1>
+
+      {/* Section pour créer une collection */}
+      <div>
+        <input
+          type="text"
+          placeholder="Nom de la collection"
+          value={collectionName}
+          onChange={(e) => setCollectionName(e.target.value)}
+          className={styles.input}
+        />
+        <button onClick={handleCreateCollection} className={styles.button}>
+          Créer la collection
+        </button>
+      </div>
+
+      {/* Afficher la collection du propriétaire */}
+      <h2>Votre Collection</h2>
+      <div className={styles.collection}>
+        {wallet && wallet.collection && wallet.collection.length > 0 ? (
+          wallet.collection.map((card, index) => (
+            <div key={index} className={styles.card}>
+              <img src={card.imgURI} alt={`Card ${index}`} />
+              <p>Card #{index + 1}</p>
+            </div>
+          ))
+        ) : (
+          <p>Pas de cartes dans votre collection.</p>
+        )}
+      </div>
+      
     </div>
   )
 }
