@@ -27,7 +27,7 @@ contract Collection is ERC721 {
   mapping (uint => address) cardApprovals;
 
   function createCard(uint256 _cardNumber, string _name, string _image) public {
-    require(cards.length < cardCount);
+    require(cards.length < cardCount, "Cannot create more cards than the limit.");
     uint id = cards.push(Card(_cardNumber, _name, _image)) - 1;
     //cardToOwner[id] = msg.sender;
     //ownerCardCount[msg.sender] = ownerCardCount[msg.sender].add(1);
@@ -49,6 +49,14 @@ contract Collection is ERC721 {
       }
     }
     return result;
+  }
+
+
+  function mintCard(address _to, uint256 _cardNumber, string _name, string _image) public { //onlyOwner ??
+    require(cards.length < cardCount, "Card does not exist in the collection.");
+    cardToOwner[id] = _to;
+    ownerCardCount[_to] = ownerCardCount[_to].add(1);
+    NewCard(_cardNumber, _name, _image);
   }
 
   function balanceOf(address _owner) public view returns (uint256 _balance) {

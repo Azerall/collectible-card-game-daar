@@ -14,7 +14,7 @@ contract Main is Ownable {
     count = 0;
   }
 
-  function createCollection(string calldata name, int cardCount) external returns (uint) onlyOwner {
+  function createCollection(string calldata name, int cardCount) external onlyOwner returns (uint) {
     collections[count] = new Collection(name, cardCount);
     count = count.add(1);
     return count-1;
