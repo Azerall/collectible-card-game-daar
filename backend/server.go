@@ -33,7 +33,7 @@ type Card struct {
 	ID       uint   `gorm:"primaryKey"`
 	ImageUrl string `json:"imageUrl"`
 	Name     string `json:"name"`
-	SetID    uint   // Clé étrangère vers PokemonSet
+	SetID    string // Clé étrangère vers PokemonSet
 }
 
 // Structure pour stocker les données du set
@@ -88,9 +88,11 @@ func fetchPokemonSet(setName string) (PokemonSet, error) {
 	// Récupération des URLs d'images des cartes
 	cards := []Card{}
 	for _, card := range cardData["data"].([]interface{}) {
+		cardName := card.(map[string]interface{})["name"].(string)
+		cardIdSet := card.(map[string]interface{})["set"].(map[string]interface{})["id"].(string)
 		cardMap := card.(map[string]interface{})
 		imgUrl := cardMap["images"].(map[string]interface{})["small"].(string)
-		cards = append(cards, Card{ImageUrl: imgUrl})
+		cards = append(cards, Card{Name: cardName, ImageUrl: imgUrl, SetID: cardIdSet})
 	}
 
 	// Retourne le set de cartes avec le nom du set
