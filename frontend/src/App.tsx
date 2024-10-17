@@ -3,6 +3,11 @@ import styles from './styles.module.css'
 import * as ethereum from '@/lib/ethereum'
 import * as main from '@/lib/main'
 
+import { HomePage } from './homePage'
+import { CollectionPage } from './collectionPage'
+import { UserPage } from './userPage'
+import { MintPage } from './mintPage'
+
 type Canceler = () => void
 const useAffect = (
   asyncEffect: () => Promise<Canceler | void>,
@@ -41,31 +46,41 @@ const useWallet = () => {
 
 export const App = () => {
   const wallet = useWallet()
-  const [collectionName, setCollectionName] = useState('')
+
+  const [page, setPage] = useState("homePage"); // La première page affichée est la page de connexion
   
-  // Gestion de la création d'une nouvelle collection
-  const handleCreateCollection = async () => {
-    if (!wallet || !wallet.contract) return
-    try {
-      // Appel au backend pour récupérer les données de la collection via l'API Pokémon TCG
-      const pokemonSetData = await fetch(`/api/pokemon-set?name=${collectionName}`).then(res => res.json())
-
-      const imgURIs = pokemonSetData.cards.map((card: any) => card.imageUrl)
-      const cardCount = imgURIs.length
-
-      // Appel du smart contract pour créer la collection
-      await wallet.contract.createCollection(pokemonSetData.name, cardCount, imgURIs)
-      alert('Collection créée avec succès !')
-    } catch (error) {
-      console.error('Erreur lors de la création de la collection:', error)
-    }
+  // Fonction pour changer de page
+  const changePage = (page: string) => {
+    setPage(page);
   }
 
   return (
     <div className={styles.body}>
+      <div className={styles.maincontent}>
+        <header className={styles.header}>
+          <nav className={styles.nav}>
+            <img src="/logo.png" alt="Logo" className={styles.logo} />
+            <ul className={styles.navlinks}>
+              <li onClick={() => changePage("homePage")}>Accueil</li>
+              <li onClick={() => changePage("collectionPage")}>Collections</li>
+              <li onClick={() => changePage("userPage")}>Utilisateurs</li>
+              <li onClick={() => changePage("mintPage")}>Mint</li>
+            </ul>
+          </nav>
+        </header>
+        { page==="homePage"? <HomePage/> : "" }
+        { page==="collectionPage"? <CollectionPage/> : "" }
+        { page==="userPage"? <UserPage/> : "" }
+        { page==="mintPage"? <MintPage/> : "" }
+      </div>
+      
+    </div>
+  )
+
+  /*return (
+    <div className={styles.body}>
       <h1>Welcome to Pokémon TCG</h1>
 
-      {/* Section pour créer une collection */}
       <div>
         <input
           type="text"
@@ -79,7 +94,6 @@ export const App = () => {
         </button>
       </div>
 
-      {/* Afficher la collection du propriétaire */}
       <h2>Votre Collection</h2>
       <div className={styles.collection}>
         {wallet && wallet.collection && wallet.collection.length > 0 ? (
@@ -95,5 +109,5 @@ export const App = () => {
       </div>
       
     </div>
-  )
+  )*/
 }

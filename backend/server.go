@@ -25,30 +25,28 @@ type MintedCard struct {
 	ID     uint `gorm:"primaryKey"` // Identifiant unique, représente le NFT
 	CardID uint // Clé étrangère vers Card
 	UserID uint // Clé étrangère vers User
-	// MintedAt time.Time // Date à laquelle la carte a été mintée, historique
 }
 
 // Structure pour stocker les données d'une carte
 type Card struct {
-	ID       uint   `gorm:"primaryKey"`
-	ImageUrl string `json:"imageUrl"`
+	ID       string `gorm:"primaryKey" json:"id"` // Identifiant unique de la carte
 	Name     string `json:"name"`
+	ImageUrl string `json:"imageUrl"`
 	SetID    string // Clé étrangère vers PokemonSet
 }
 
 // Structure pour stocker les données du set
 type PokemonSet struct {
-	ID    uint   `gorm:"primaryKey"` // Identifiant unique pour le set
+	ID    string `json:"id"` // Identifiant unique du set
 	Name  string `json:"name"`
-	Cards []Card `gorm:"foreignKey:SetID"` // Clé étrangère vers la carte
+	Cards []Card `gorm:"foreignKey:SetID"` // Clé étrangère vers les cartes
 }
 
-// Fonction pour récupérer le set de cartes de l'API Pokémon TCG
-func fetchPokemonSet(setName string) (PokemonSet, error) {
+// Fonction pour récupérer le set de cartes de l'API Pokémon TCG et le sauvegarder dans la base de données
+func fetchPokemonSet(setName string, db *gorm.DB) (PokemonSet, error) {
 	client := resty.New()
 	setName = url.QueryEscape(setName)
 	apiUrl := fmt.Sprintf("https://api.pokemontcg.io/v2/sets?q=name:%s", setName)
-	// https://api.pokemontcg.io/v2/sets?q=name:Jungle
 
 	// Appel de l'API pour récupérer le set de cartes
 	resp, err := client.R().
@@ -66,9 +64,23 @@ func fetchPokemonSet(setName string) (PokemonSet, error) {
 		return PokemonSet{}, fmt.Errorf("Aucun set trouvé pour ce nom.")
 	}
 
+	// Vérification si la clé "data" existe et n'est pas nulle
+	data, ok := responseData["data"].([]interface{})
+	if !ok || data == nil {
+		return PokemonSet{}, fmt.Errorf("Aucun set trouvé pour ce nom.")
+	}
+
 	firstSet := responseData["data"].([]interface{})[0].(map[string]interface{})
 	setID := firstSet["id"].(string)
 	setName = firstSet["name"].(string)
+
+	// Vérifier si le set existe déjà dans la base de données
+	var existingSet PokemonSet
+	err = db.Where("name = ?", setName).First(&existingSet).Error
+	if err == nil {
+		// Si aucune erreur, cela signifie que le set existe déjà
+		return existingSet, fmt.Errorf("Le set existe déjà dans la base de données")
+	}
 
 	// Appel pour récupérer les cartes de ce set
 	cardResp, err := client.R().
@@ -88,29 +100,42 @@ func fetchPokemonSet(setName string) (PokemonSet, error) {
 	// Récupération des URLs d'images des cartes
 	cards := []Card{}
 	for _, card := range cardData["data"].([]interface{}) {
+		cardId := card.(map[string]interface{})["id"].(string)
 		cardName := card.(map[string]interface{})["name"].(string)
 		cardIdSet := card.(map[string]interface{})["set"].(map[string]interface{})["id"].(string)
 		cardMap := card.(map[string]interface{})
 		imgUrl := cardMap["images"].(map[string]interface{})["small"].(string)
-		cards = append(cards, Card{Name: cardName, ImageUrl: imgUrl, SetID: cardIdSet})
+		cards = append(cards, Card{ID: cardId, Name: cardName, ImageUrl: imgUrl, SetID: cardIdSet})
+	}
+
+	// Créer et sauvegarder le set de cartes dans la base de données
+	newSet := PokemonSet{
+		ID:    setID,
+		Name:  setName,
+		Cards: cards,
+	}
+
+	if err := db.Create(&newSet).Error; err != nil {
+		return PokemonSet{}, fmt.Errorf("Erreur lors de l'insertion du set dans la base de données : %v", err)
 	}
 
 	// Retourne le set de cartes avec le nom du set
-	return PokemonSet{Name: setName, Cards: cards}, nil
+	return newSet, nil
 }
 
-func pokemonSetHandler(c *gin.Context) {
+func pokemonSetHandler(c *gin.Context, db *gorm.DB) {
 	setName := c.Query("name") // Récupère le nom du set depuis les paramètres de requête
 
-	pokemonSet, err := fetchPokemonSet(setName)
+	pokemonSet, err := fetchPokemonSet(setName, db)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, pokemonSet)
+	c.JSON(http.StatusOK, gin.H{"set": pokemonSet})
 }
 
+// Fonction pour récupérer tous les sets de cartes de l'API Pokémon TCG
 func fetchAllPokemonSets() ([]string, error) {
 	client := resty.New()
 	apiUrl := "https://api.pokemontcg.io/v2/sets"
@@ -143,7 +168,6 @@ func fetchAllPokemonSets() ([]string, error) {
 	return sets, nil
 }
 
-// Exemple d'utilisation dans un handler
 func pokemonSetsHandler(c *gin.Context) {
 	sets, err := fetchAllPokemonSets()
 	if err != nil {
@@ -175,6 +199,21 @@ func pokemonSetsHandler(c *gin.Context) {
 	json.NewEncoder(w).Encode(pokemonSet)
 }*/
 
+// Fonction pour récupérer toutes les collections de cartes dans la base de données
+func getAllCollections(c *gin.Context, db *gorm.DB) {
+	// Variable pour stocker toutes les collections
+	var collections []PokemonSet
+
+	// Récupération de toutes les collections (sets) dans la base de données
+	if err := db.Preload("Cards").Find(&collections).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de la récupération des collections"})
+		return
+	}
+
+	// Renvoi des collections sous forme de JSON
+	c.JSON(http.StatusOK, collections)
+}
+
 func main() {
 	// Connexion à la base de données SQLite
 	db, err := gorm.Open(sqlite.Open("cards.db"), &gorm.Config{})
@@ -196,8 +235,15 @@ func main() {
 		AllowHeaders:    []string{"Accept", "Content-Type", "Authorization"},
 	}))
 
-	r.GET("/pokemon-set", pokemonSetHandler)   // Route pour récupérer un set Pokémon
-	r.GET("/pokemon-sets", pokemonSetsHandler) // Route pour récupérer tous les sets Pokémon
+	r.POST("/pokemon-set", func(c *gin.Context) { // Route pour créer un set Pokémon
+		pokemonSetHandler(c, db)
+	})
+	r.GET("/pokemon-sets", func(c *gin.Context) { // Route pour récupérer tous les sets Pokémon
+		pokemonSetsHandler(c)
+	})
+	r.GET("/collections", func(c *gin.Context) { // Route pour récupérer toutes les collections
+		getAllCollections(c, db)
+	})
 
 	// Démarrage du serveur Gin sur le port 8080
 	log.Println("Server starting on port 8080...")
@@ -205,5 +251,5 @@ func main() {
 		log.Fatalf("Error starting server: %s\n", err)
 	}
 
-	log.Println("Server started successfully") // Ajoutez ce log
+	log.Println("Server started successfully")
 }

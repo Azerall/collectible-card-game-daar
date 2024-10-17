@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8;
 
-import "./ownable.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 import "./safemath.sol";
 
-contract Collection is ERC721 {
+contract Collection is ERC721, Ownable {
 
   using SafeMath for uint256;
-  using SafeMath16 for uint16;
 
   event NewCard(uint cardNumber, string name, string image);
 
@@ -17,29 +18,21 @@ contract Collection is ERC721 {
     string image;
   }
 
-  string public name;
-  uint16 public cardCount;
+  string public collectionName;
+  uint256 public cardCount;
+  address public admin;  // L'administrateur de la collection
+
   Card[] public cards;
+  mapping (uint => address) public cardToOwner; // Mapping des Token IDs vers les adresses des propriétaires
+  mapping (address => uint) ownerCardCount; // Mapping des adresses des propriétaires vers le nombre de cartes qu'ils possèdent
 
-  mapping (uint => address) public cardToOwner;
-  mapping (address => uint) ownerCardCount;
-
-  mapping (uint => address) cardApprovals;
-
-  function createCard(uint256 _cardNumber, string _name, string _image) public {
-    require(cards.length < cardCount, "Cannot create more cards than the limit.");
-    uint id = cards.push(Card(_cardNumber, _name, _image)) - 1;
-    //cardToOwner[id] = msg.sender;
-    //ownerCardCount[msg.sender] = ownerCardCount[msg.sender].add(1);
-    NewCard(_cardNumber, _name, _image);
-  }
-
-  constructor(string memory _name, int _cardCount) {
-    name = _name;
+  constructor(string memory _name, string memory _symbol, uint256 _cardCount) ERC721(_name, _symbol) Ownable(msg.sender) {
+    collectionName = _name;
     cardCount = _cardCount;
+    admin = msg.sender; // Le créateur de la collection est l'administrateur
   }
   
-  function getCardsByOwner(address _owner) external view returns(uint[]) {
+  function getCardsByOwner(address _owner) external view returns(uint[] memory) {
     uint[] memory result = new uint[](ownerCardCount[_owner]);
     uint counter = 0;
     for (uint i = 0; i < cards.length; i++) {
@@ -51,41 +44,35 @@ contract Collection is ERC721 {
     return result;
   }
 
+  // Fonction pour minter une carte pour un utilisateur spécifique
+  function mintCard(address _to, uint256 _cardNumber, string memory _name, string memory _image) external {
+      require(msg.sender == admin); // Seul l'administrateur peut mint une carte
 
-  function mintCard(address _to, uint256 _cardNumber, string _name, string _image) public { //onlyOwner ??
-    require(cards.length < cardCount, "Card does not exist in the collection.");
-    cardToOwner[id] = _to;
-    ownerCardCount[_to] = ownerCardCount[_to].add(1);
-    NewCard(_cardNumber, _name, _image);
+      cards.push(Card(_cardNumber, _name, _image));
+      uint id = cards.length - 1;
+      cardToOwner[id] = _to;
+      ownerCardCount[_to] = ownerCardCount[_to].add(1);
+
+      _safeMint(_to, id);  // Mint le NFT pour l'utilisateur
   }
 
-  function balanceOf(address _owner) public view returns (uint256 _balance) {
+  function balanceOf(address _owner) public view override returns (uint256 _balance) {
     return ownerCardCount[_owner];
   }
 
-  function ownerOf(uint256 _tokenId) public view returns (address _owner) {
+  function ownerOf(uint256 _tokenId) public view override returns (address _owner) {
     return cardToOwner[_tokenId];
   }
 
-  function _transfer(address _from, address _to, uint256 _tokenId) private {
+  function _transfer(address _from, address _to, uint256 _tokenId) internal override {
     ownerCardCount[_to] = ownerCardCount[_to].add(1);
     ownerCardCount[msg.sender] = ownerCardCount[msg.sender].sub(1);
     cardToOwner[_tokenId] = _to;
-    Transfer(_from, _to, _tokenId);
+    emit Transfer(_from, _to, _tokenId);
   }
 
-  function transfer(address _to, uint256 _tokenId) public onlyOwnerOf(_tokenId) {
+  function transfer(address _to, uint256 _tokenId) public {
+    require(msg.sender == cardToOwner[_tokenId]);
     _transfer(msg.sender, _to, _tokenId);
-  }
-
-  function approve(address _to, uint256 _tokenId) public onlyOwnerOf(_tokenId) {
-    cardApprovals[_tokenId] = _to;
-    Approval(msg.sender, _to, _tokenId);
-  }
-
-  function takeOwnership(uint256 _tokenId) public {
-    require(cardApprovals[_tokenId] == msg.sender);
-    address owner = ownerOf(_tokenId);
-    _transfer(owner, msg.sender, _tokenId);
   }
 }

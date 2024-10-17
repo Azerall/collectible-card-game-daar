@@ -1,43 +1,148 @@
-.body {
-  padding: 20px;
-  font-family: Arial, sans-serif;
-  text-align: center;
+body {
+  font-family: 'Lato', sans-serif;
+  background-color: #FFFFFF;
+  margin: 0;
+  padding: 0;
 }
 
-.input {
-  padding: 10px;
-  margin-right: 10px;
-  font-size: 16px;
+/* Header */
+.header {
+  width: 100%;
+  background-color: #00342068;
 }
 
-.button {
-  padding: 10px;
-  background-color: #0070f3;
-  color: white;
-  border: none;
+.nav {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.logo {
+  height: 7vh;
+  padding: 1%;
+}
+
+.navlinks {
+  display: flex;
+  gap: 3vw;
+}
+
+.navlinks li {
+  list-style: none;
+  font-size: 2vh;
+  font-weight: bold;
+  color: #FFFFFF;
   cursor: pointer;
 }
 
-.button:hover {
-  background-color: #005bb5;
+.maincontent {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  background: url('background.jpg') no-repeat;
+  background-size: cover;
 }
 
-.collection {
+
+/* homePage */
+
+.homepage {
+  position: absolute;
+  width: 100%;
+  top: 34%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  justify-content: center;
+}
+
+.introtext {
+  background-color: #00342068;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  color: #FFFFFF;
+  padding: 2%;
+  border-radius: 10px;
+}
+
+.introtext h1 {
+  font-size: 5vh;
+  font-weight: 800;
+}
+
+.introtext p {
   margin-top: 20px;
+  font-size: 2.4vh;
+  line-height: 1.5;
+}
+
+/* collectionPage */
+
+.container {
+  width: 80%;
+  padding: 20px;
+  margin: 0 auto;
+}
+
+.section {
+  margin-bottom: 40px;
+  padding: 20px;
+  background-color: #00342068; /* Encadré */
+  border-radius: 8px;
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 3vh;
+  font-weight: bold;
+  color: white;
+}
+
+.collectionForm {
   display: flex;
   justify-content: center;
-  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.card {
-  width: 150px;
-  margin: 10px;
+.select {
+  padding: 8px;
+  border: 2px solid #003420;
+  border-radius: 10px;
+  font-size: 16px;
+  width: 15vw;
 }
 
-.card img {
-  width: 100%;
+.createButton {
+  padding: 8px 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
-.card p {
-  font-size: 14px;
+.collectionGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.collectionItem {
+  text-align: center;
+}
+
+.collectionImage {
+  height: 10vh;
+  max-width: 10vw;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.collectionItem p {
+  margin-top: 10px;
+  font-size: 18px;
+  color: white;
 }
