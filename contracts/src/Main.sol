@@ -5,26 +5,19 @@ import "./Collection.sol";
 
 contract Main is Ownable {
 
-  using SafeMath for uint256;
-
-  uint private count;
+  int private count;
   mapping(int => Collection) private collections;
 
-  constructor() {
+  constructor() Ownable(msg.sender) {
     count = 0;
   }
 
-  function createCollection(string calldata name, int cardCount) external onlyOwner returns (uint) {
-    collections[count] = new Collection(name, cardCount);
-    count = count.add(1);
+  function createCollection(string calldata name, uint256 cardCount) external onlyOwner returns (int) {
+    collections[count++] = new Collection(name, "PKM", cardCount);
     return count-1;
   }
 
   function getCollection(int index) external view returns(Collection) {
     return collections[index];
-  }
-
-  function addCardToCollection(int index, uint256 cardNumber, string calldata name, string calldata image) external onlyOwner {
-    collections[index].createCard(cardNumber, name, image);
   }
 }

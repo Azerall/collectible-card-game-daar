@@ -4,11 +4,7 @@ pragma solidity ^0.8;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "./safemath.sol";
-
 contract Collection is ERC721, Ownable {
-
-  using SafeMath for uint256;
 
   event NewCard(uint cardNumber, string name, string image);
 
@@ -37,8 +33,7 @@ contract Collection is ERC721, Ownable {
     uint counter = 0;
     for (uint i = 0; i < cards.length; i++) {
       if (cardToOwner[i] == _owner) {
-        result[counter] = i;
-        counter = counter.add(1);
+        result[counter++] = i;
       }
     }
     return result;
@@ -51,7 +46,7 @@ contract Collection is ERC721, Ownable {
       cards.push(Card(_cardNumber, _name, _image));
       uint id = cards.length - 1;
       cardToOwner[id] = _to;
-      ownerCardCount[_to] = ownerCardCount[_to].add(1);
+      ownerCardCount[_to]++;
 
       _safeMint(_to, id);  // Mint le NFT pour l'utilisateur
   }
@@ -64,9 +59,9 @@ contract Collection is ERC721, Ownable {
     return cardToOwner[_tokenId];
   }
 
-  function _transfer(address _from, address _to, uint256 _tokenId) internal override {
-    ownerCardCount[_to] = ownerCardCount[_to].add(1);
-    ownerCardCount[msg.sender] = ownerCardCount[msg.sender].sub(1);
+  /*function _transfer(address _from, address _to, uint256 _tokenId) internal override {
+    ownerCardCount[_to]++;
+    ownerCardCount[msg.sender]--;
     cardToOwner[_tokenId] = _to;
     emit Transfer(_from, _to, _tokenId);
   }
@@ -74,5 +69,5 @@ contract Collection is ERC721, Ownable {
   function transfer(address _to, uint256 _tokenId) public {
     require(msg.sender == cardToOwner[_tokenId]);
     _transfer(msg.sender, _to, _tokenId);
-  }
+  }*/
 }
