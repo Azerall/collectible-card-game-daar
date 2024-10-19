@@ -16,7 +16,7 @@ contract Collection is ERC721, Ownable {
 
   string public collectionName;
   uint256 public cardCount;
-  address public admin;  // L'administrateur de la collection
+  address public admin; // L'administrateur de la collection
 
   Card[] public cards;
   mapping (uint => address) public cardToOwner; // Mapping des Token IDs vers les adresses des propriétaires

@@ -2,17 +2,28 @@ import React from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import styles from './styles.module.css'
 
-type Collection = {
+type Card = {
   id: string;
   name: string;
   imageUrl: string;
+  SetID: string;
 };
 
-export const CollectionPage = () => {
+type Collection = {
+  id: string;
+  name: string;
+  Cards: Card[];
+};
+
+interface CollectionPageProps {
+  userCollections: Collection[]
+  setUserCollections: React.Dispatch<React.SetStateAction<Collection[]>>
+}
+export const CollectionPage = ({ userCollections, setUserCollections }: CollectionPageProps) => {
     
   const [availableSets, setAvailableSets] = useState<string[]>([]);
   const [selectedSet, setSelectedSet] = useState('');
-  const [userCollections, setUserCollections] = useState<Collection[]>([]);
+  const [loading, setLoading] = useState(false);
 
   // Récupérer les sets disponibles depuis le backend
   useEffect(() => {
@@ -48,6 +59,7 @@ export const CollectionPage = () => {
   // Fonction pour créer une collection
   const handleCreateCollection = async () => {
     if (!selectedSet) return;
+    setLoading(true);
     try {
       const response = await fetch(`http://localhost:8080/pokemon-set?name=${selectedSet}`, {
         method: 'POST',
@@ -64,15 +76,14 @@ export const CollectionPage = () => {
 
   return (
     <div className={styles.container}>
-      {/* Section pour créer une collection */}
+
       <section className={styles.section}>
         <h2>Créez une collection</h2>
         <div className={styles.collectionForm}>
           <select
             value={selectedSet}
             onChange={(e) => setSelectedSet(e.target.value)}
-            className={styles.select}
-          >
+            className={styles.select}>
             <option value="">Sélectionnez un set</option>
             {availableSets.map((set) => (
               <option key={set} value={set}>
@@ -80,13 +91,12 @@ export const CollectionPage = () => {
               </option>
             ))}
           </select>
-          <button onClick={handleCreateCollection} className={styles.createButton}>
-            Créer
+          <button onClick={handleCreateCollection} className={styles.createButton} disabled={loading}>
+            {loading ? 'Création...' : 'Créer'}
           </button>
         </div>
       </section>
 
-      {/* Section affichant les collections existantes */}
       <section className={styles.section}>
         <h2>Vos collections</h2>
         <div className={styles.collectionGrid}>

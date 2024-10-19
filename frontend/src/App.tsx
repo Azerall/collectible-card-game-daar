@@ -44,15 +44,50 @@ const useWallet = () => {
   }, [details, contract])
 }
 
+type Card = {
+  id: string;
+  name: string;
+  imageUrl: string;
+  SetID: string;
+};
+
+type Collection = {
+  id: string;
+  name: string;
+  Cards: Card[];
+};
+
 export const App = () => {
   const wallet = useWallet()
 
-  const [page, setPage] = useState("homePage"); // La première page affichée est la page de connexion
+  const [userCollections, setUserCollections] = useState<Collection[]>([]);
+  const [page, setPage] = useState("homePage");
   
   // Fonction pour changer de page
   const changePage = (page: string) => {
     setPage(page);
   }
+
+  useEffect(() => {
+    if (!wallet) return
+    console.log('wallet', wallet)
+  }, [wallet])
+
+  // Récupérer toutes les collections depuis le backend
+  useEffect(() => {
+    const fetchUserCollections = async () => {
+      try {
+        const response = await fetch('http://localhost:8080/collections');
+        const collections = await response.json();
+        setUserCollections(collections);
+        console.log(collections);
+      } catch (error) {
+        console.error('Error fetching collections:', error);
+      }
+    };
+
+    fetchUserCollections();
+  }, []);
 
   return (
     <div className={styles.body}>
@@ -69,45 +104,11 @@ export const App = () => {
           </nav>
         </header>
         { page==="homePage"? <HomePage/> : "" }
-        { page==="collectionPage"? <CollectionPage/> : "" }
+        { page==="collectionPage"? <CollectionPage userCollections={userCollections} setUserCollections={setUserCollections}/> : "" }
         { page==="userPage"? <UserPage/> : "" }
-        { page==="mintPage"? <MintPage/> : "" }
+        { page==="mintPage"? <MintPage  userCollections={userCollections}/> : "" }
       </div>
       
     </div>
   )
-
-  /*return (
-    <div className={styles.body}>
-      <h1>Welcome to Pokémon TCG</h1>
-
-      <div>
-        <input
-          type="text"
-          placeholder="Nom de la collection"
-          value={collectionName}
-          onChange={(e) => setCollectionName(e.target.value)}
-          className={styles.input}
-        />
-        <button onClick={handleCreateCollection} className={styles.button}>
-          Créer la collection
-        </button>
-      </div>
-
-      <h2>Votre Collection</h2>
-      <div className={styles.collection}>
-        {wallet && wallet.collection && wallet.collection.length > 0 ? (
-          wallet.collection.map((card, index) => (
-            <div key={index} className={styles.card}>
-              <img src={card.imgURI} alt={`Card ${index}`} />
-              <p>Card #{index + 1}</p>
-            </div>
-          ))
-        ) : (
-          <p>Pas de cartes dans votre collection.</p>
-        )}
-      </div>
-      
-    </div>
-  )*/
 }
