@@ -28,6 +28,7 @@ contract Collection is ERC721, Ownable {
     admin = msg.sender; // Le créateur de la collection est l'administrateur
   }
   
+  // Fonction pour récupérer les cartes d'un utilisateur
   function getCardsByOwner(address _owner) external view returns(uint[] memory) {
     uint[] memory result = new uint[](ownerCardCount[_owner]);
     uint counter = 0;
@@ -48,26 +49,27 @@ contract Collection is ERC721, Ownable {
       cardToOwner[id] = _to;
       ownerCardCount[_to]++;
 
-      _safeMint(_to, id);  // Mint le NFT pour l'utilisateur
+      _safeMint(_to, id); // Mint le NFT pour l'utilisateur
   }
 
+  // Transfert d'une carte de l'adresse _from vers l'adresse _to
+  function transferCard(address _from, address _to, uint256 _tokenId) external {
+      require(_from == ownerOf(_tokenId));
+      
+      cardToOwner[_tokenId] = _to;
+      ownerCardCount[_from]--;
+      ownerCardCount[_to]++;
+
+      safeTransferFrom(_from, _to, _tokenId); // Transfère le NFT de l'ancien propriétaire au nouveau
+  }
+
+  // Fonction pour récupérer le nombre de cartes d'un utilisateur
   function balanceOf(address _owner) public view override returns (uint256 _balance) {
     return ownerCardCount[_owner];
   }
 
+  // Fonction pour récupérer le propriétaire d'une carte
   function ownerOf(uint256 _tokenId) public view override returns (address _owner) {
     return cardToOwner[_tokenId];
   }
-
-  /*function _transfer(address _from, address _to, uint256 _tokenId) internal override {
-    ownerCardCount[_to]++;
-    ownerCardCount[msg.sender]--;
-    cardToOwner[_tokenId] = _to;
-    emit Transfer(_from, _to, _tokenId);
-  }
-
-  function transfer(address _to, uint256 _tokenId) public {
-    require(msg.sender == cardToOwner[_tokenId]);
-    _transfer(msg.sender, _to, _tokenId);
-  }*/
 }

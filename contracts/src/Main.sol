@@ -3,21 +3,37 @@ pragma solidity ^0.8;
 
 import "./Collection.sol";
 
-contract Main is Ownable {
+contract Main {
 
   int private count;
-  mapping(int => Collection) private collections;
+  mapping(string => Collection) private collections;
 
-  constructor() Ownable(msg.sender) {
+  mapping(address => bool) private superAdmins; // Liste des super admins autorisés à créer des collections et mint des cartes
+
+  constructor() {
     count = 0;
+    superAdmins[0xf443e27A591D9BCaeD1BD9391F0553f73460CfF5] = true;
   }
 
-  function createCollection(string calldata name, uint256 cardCount) external onlyOwner returns (int) {
-    collections[count++] = new Collection(name, "PKM", cardCount);
-    return count-1;
+  // Fonction pour créer une collection
+  function createCollection(string calldata collectionId, string calldata name, uint256 cardCount) external {
+    collections[collectionId] = new Collection(name, "PKM", cardCount);
+    count++;
   }
 
-  function getCollection(int index) external view returns(Collection) {
-    return collections[index];
+  // Récupère les cartes d'un utilisateur pour une collection donnée
+  function getUserCards(string calldata  collectionId, address owner) external view returns (uint[] memory) {
+    return collections[collectionId].getCardsByOwner(owner);
   }
+  // Fonction pour mint une carte dans une collection spécifique
+  function mintCard(string calldata collectionId, address to, uint256 cardNumber, string calldata name, string calldata image) external {
+    collections[collectionId].mintCard(to, cardNumber, name, image);
+  }
+
+  // Transfère une carte d'un propriétaire à un autre dans une collection
+  function transferCard(string calldata collectionId, uint256 tokenId, address from, address to) external {
+    Collection collection = collections[collectionId];
+    collection.transferCard(from, to, tokenId);
+  }
+
 }
