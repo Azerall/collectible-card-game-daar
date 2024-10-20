@@ -50,6 +50,7 @@ export const MintPage = ({ userCollections }: MintPageProps) => {
             <div className={styles.closeButton} onClick={() => setIsCardOpen(false)}>
               &#8592;
             </div>
+            <h2>Attribuez cette carte</h2>
             <MintForm selectedCard={selectedCard} />
           </div>) 
 
@@ -110,7 +111,7 @@ const MintForm = ({ selectedCard }: MintFormProps) => {
           <p>Cette carte a déjà été minée.</p>
         ) : (
           <div>
-            <p>Attribuer cette carte :</p>
+            <p>Choisissez un utilisateur :</p>
             <select onChange={(e) => setSelectedUser(e.target.value)} value={selectedUser}>
               <option value="">Sélectionner un utilisateur</option>
               {/* Remplacer par une liste d'utilisateurs */}

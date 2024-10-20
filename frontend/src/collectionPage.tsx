@@ -21,7 +21,7 @@ interface CollectionPageProps {
 }
 export const CollectionPage = ({ userCollections, setUserCollections }: CollectionPageProps) => {
     
-  const [availableSets, setAvailableSets] = useState<string[]>([]);
+  const [availableSets, setAvailableSets] = useState<[string, string][]>([]);
   const [selectedSet, setSelectedSet] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -61,7 +61,7 @@ export const CollectionPage = ({ userCollections, setUserCollections }: Collecti
     if (!selectedSet) return;
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:8080/pokemon-set?name=${selectedSet}`, {
+      const response = await fetch(`http://localhost:8080/pokemon-set?id=${selectedSet}`, {
         method: 'POST',
       });
       if (response.ok) {
@@ -86,8 +86,8 @@ export const CollectionPage = ({ userCollections, setUserCollections }: Collecti
             className={styles.select}>
             <option value="">Sélectionnez un set</option>
             {availableSets.map((set) => (
-              <option key={set} value={set}>
-                {set}
+              <option key={set[0]} value={set[0]}>
+                {set[1]}
               </option>
             ))}
           </select>

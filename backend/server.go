@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"sort"
 	"strings"
 
 	"encoding/json"
@@ -43,10 +44,9 @@ type PokemonSet struct {
 }
 
 // Fonction pour récupérer le set de cartes de l'API Pokémon TCG et le sauvegarder dans la base de données
-func fetchPokemonSet(setId string, db *gorm.DB, collections map[string]string) (PokemonSet, error) {
+func fetchPokemonSet(setId string, db *gorm.DB) (PokemonSet, error) {
 	client := resty.New()
 	setId = strings.TrimSpace(setId)
-	// apiUrl := fmt.Sprintf("https://api.pokemontcg.io/v2/sets?q=name:%s", setName)
 	apiUrl := fmt.Sprintf("https://api.pokemontcg.io/v2/sets?q=id:%s", setId)
 
 	// Appel de l'API pour récupérer le set de cartes
@@ -124,12 +124,9 @@ func fetchPokemonSet(setId string, db *gorm.DB, collections map[string]string) (
 	return newSet, nil
 }
 
-func pokemonSetHandler(c *gin.Context, db *gorm.DB, collections map[string]string) {
-	// setName := c.Query("name") // Récupère le nom du set depuis les paramètres de requête
-	// println("AVANT ", setName)
+func pokemonSetHandler(c *gin.Context, db *gorm.DB) {
 	setId := c.Query("id") // Récupère l'id du set depuis les paramètres de requête
-	// pokemonSet, err := fetchPokemonSet(setName, db, collections)
-	pokemonSet, err := fetchPokemonSet(setId, db, collections)
+	pokemonSet, err := fetchPokemonSet(setId, db)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -138,8 +135,7 @@ func pokemonSetHandler(c *gin.Context, db *gorm.DB, collections map[string]strin
 	c.JSON(http.StatusOK, gin.H{"set": pokemonSet})
 }
 
-// Fonction pour récupérer tous les sets de cartes de l'API Pokémon TCG
-func fetchAllPokemonSets() ([]string, error) {
+func fetchAllPokemonSets() ([][2]string, error) {
 	client := resty.New()
 	apiUrl := "https://api.pokemontcg.io/v2/sets"
 
@@ -149,7 +145,7 @@ func fetchAllPokemonSets() ([]string, error) {
 		Get(apiUrl)
 
 	if err != nil {
-		return nil, fmt.Errorf("Erreur lors de l'appel à l'API Pokémon TCG : %v", err)
+		return nil, err
 	}
 
 	// Décodage de la réponse JSON
@@ -159,14 +155,19 @@ func fetchAllPokemonSets() ([]string, error) {
 
 	err = json.Unmarshal(resp.Body(), &responseData)
 	if err != nil {
-		return nil, fmt.Errorf("Erreur de parsing de la réponse : %v", err)
+		return nil, err
 	}
 
-	// Extraction des noms des sets
-	sets := []string{}
-	for _, set := range responseData.Data {
-		sets = append(sets, set.Name)
+	// Création de la liste de paires [id, name]
+	sets := make([][2]string, len(responseData.Data))
+	for i, set := range responseData.Data {
+		sets[i] = [2]string{set.ID, set.Name}
 	}
+
+	// Trier les sets par ordre alphabétique des noms
+	sort.Slice(sets, func(i, j int) bool {
+		return sets[i][1] < sets[j][1]
+	})
 
 	return sets, nil
 }
@@ -180,60 +181,6 @@ func pokemonSetsHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"sets": sets})
 }
-
-// créer une map pour les collections, clé = id de la collection, valeur = nom de la collection
-func createMapCollections() map[string]string {
-	client := resty.New()
-	apiUrl := "https://api.pokemontcg.io/v2/sets"
-
-	// Appel de l'API pour récupérer tous les sets
-	resp, err := client.R().
-		SetHeader("Accept", "application/json").
-		Get(apiUrl)
-
-	if err != nil {
-		return nil
-	}
-
-	// Décodage de la réponse JSON
-	var responseData struct {
-		Data []PokemonSet `json:"data"`
-	}
-
-	err = json.Unmarshal(resp.Body(), &responseData)
-	if err != nil {
-		return nil
-	}
-
-	// Extraction des noms des sets
-	sets := make(map[string]string)
-	for _, set := range responseData.Data {
-		sets[set.ID] = set.Name
-	}
-
-	return sets
-}
-
-// Handler pour la route API /pokemon-set
-/*func pokemonSetHandler(w http.ResponseWriter, r *http.Request) {
-	// Récupérer le nom du set depuis les paramètres de requête
-	setName := r.URL.Query().Get("name")
-	if setName == "" {
-		http.Error(w, "Le nom du set est requis.", http.StatusBadRequest)
-		return
-	}
-
-	// Récupérer les données du set via l'API Pokémon TCG
-	pokemonSet, err := fetchPokemonSet(setName)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Convertir la réponse en JSON et l'envoyer au frontend
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(pokemonSet)
-}*/
 
 // Fonction pour récupérer toutes les collections de cartes dans la base de données
 func getAllCollections(c *gin.Context, db *gorm.DB) {
@@ -261,13 +208,6 @@ func main() {
 	// Migration de la structure des tables
 	db.AutoMigrate(&Card{}, &User{}, &MintedCard{}, &PokemonSet{})
 
-	// Créer la map des collections, clé = id de la collection, valeur = nom de la collection
-	collections := createMapCollections()
-	if collections == nil {
-		log.Println("Erreur lors de la récupération des collections")
-	} else {
-		log.Println("Collections récupérées avec succès")
-	}
 	// Initialisation du routeur Gin
 	r := gin.Default()
 
@@ -279,7 +219,7 @@ func main() {
 	}))
 
 	r.POST("/pokemon-set", func(c *gin.Context) { // Route pour créer un set Pokémon
-		pokemonSetHandler(c, db, collections)
+		pokemonSetHandler(c, db)
 	})
 	r.GET("/pokemon-sets", func(c *gin.Context) { // Route pour récupérer tous les sets Pokémon
 		pokemonSetsHandler(c)
