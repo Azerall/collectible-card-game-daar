@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
-	"net/url"
+	"strings"
 
 	"encoding/json"
 	"fmt"
@@ -43,10 +43,11 @@ type PokemonSet struct {
 }
 
 // Fonction pour récupérer le set de cartes de l'API Pokémon TCG et le sauvegarder dans la base de données
-func fetchPokemonSet(setName string, db *gorm.DB) (PokemonSet, error) {
+func fetchPokemonSet(setId string, db *gorm.DB, collections map[string]string) (PokemonSet, error) {
 	client := resty.New()
-	setName = url.QueryEscape(setName)
-	apiUrl := fmt.Sprintf("https://api.pokemontcg.io/v2/sets?q=name:%s", setName)
+	setId = strings.TrimSpace(setId)
+	// apiUrl := fmt.Sprintf("https://api.pokemontcg.io/v2/sets?q=name:%s", setName)
+	apiUrl := fmt.Sprintf("https://api.pokemontcg.io/v2/sets?q=id:%s", setId)
 
 	// Appel de l'API pour récupérer le set de cartes
 	resp, err := client.R().
@@ -72,11 +73,11 @@ func fetchPokemonSet(setName string, db *gorm.DB) (PokemonSet, error) {
 
 	firstSet := responseData["data"].([]interface{})[0].(map[string]interface{})
 	setID := firstSet["id"].(string)
-	setName = firstSet["name"].(string)
+	setName := firstSet["name"].(string)
 
 	// Vérifier si le set existe déjà dans la base de données
 	var existingSet PokemonSet
-	err = db.Where("name = ?", setName).First(&existingSet).Error
+	err = db.Where("id = ?", setID).First(&existingSet).Error
 	if err == nil {
 		// Si aucune erreur, cela signifie que le set existe déjà
 		return existingSet, fmt.Errorf("Le set existe déjà dans la base de données")
@@ -123,10 +124,12 @@ func fetchPokemonSet(setName string, db *gorm.DB) (PokemonSet, error) {
 	return newSet, nil
 }
 
-func pokemonSetHandler(c *gin.Context, db *gorm.DB) {
-	setName := c.Query("name") // Récupère le nom du set depuis les paramètres de requête
-
-	pokemonSet, err := fetchPokemonSet(setName, db)
+func pokemonSetHandler(c *gin.Context, db *gorm.DB, collections map[string]string) {
+	// setName := c.Query("name") // Récupère le nom du set depuis les paramètres de requête
+	// println("AVANT ", setName)
+	setId := c.Query("id") // Récupère l'id du set depuis les paramètres de requête
+	// pokemonSet, err := fetchPokemonSet(setName, db, collections)
+	pokemonSet, err := fetchPokemonSet(setId, db, collections)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -178,6 +181,39 @@ func pokemonSetsHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"sets": sets})
 }
 
+// créer une map pour les collections, clé = id de la collection, valeur = nom de la collection
+func createMapCollections() map[string]string {
+	client := resty.New()
+	apiUrl := "https://api.pokemontcg.io/v2/sets"
+
+	// Appel de l'API pour récupérer tous les sets
+	resp, err := client.R().
+		SetHeader("Accept", "application/json").
+		Get(apiUrl)
+
+	if err != nil {
+		return nil
+	}
+
+	// Décodage de la réponse JSON
+	var responseData struct {
+		Data []PokemonSet `json:"data"`
+	}
+
+	err = json.Unmarshal(resp.Body(), &responseData)
+	if err != nil {
+		return nil
+	}
+
+	// Extraction des noms des sets
+	sets := make(map[string]string)
+	for _, set := range responseData.Data {
+		sets[set.ID] = set.Name
+	}
+
+	return sets
+}
+
 // Handler pour la route API /pokemon-set
 /*func pokemonSetHandler(w http.ResponseWriter, r *http.Request) {
 	// Récupérer le nom du set depuis les paramètres de requête
@@ -225,6 +261,13 @@ func main() {
 	// Migration de la structure des tables
 	db.AutoMigrate(&Card{}, &User{}, &MintedCard{}, &PokemonSet{})
 
+	// Créer la map des collections, clé = id de la collection, valeur = nom de la collection
+	collections := createMapCollections()
+	if collections == nil {
+		log.Println("Erreur lors de la récupération des collections")
+	} else {
+		log.Println("Collections récupérées avec succès")
+	}
 	// Initialisation du routeur Gin
 	r := gin.Default()
 
@@ -236,7 +279,7 @@ func main() {
 	}))
 
 	r.POST("/pokemon-set", func(c *gin.Context) { // Route pour créer un set Pokémon
-		pokemonSetHandler(c, db)
+		pokemonSetHandler(c, db, collections)
 	})
 	r.GET("/pokemon-sets", func(c *gin.Context) { // Route pour récupérer tous les sets Pokémon
 		pokemonSetsHandler(c)
