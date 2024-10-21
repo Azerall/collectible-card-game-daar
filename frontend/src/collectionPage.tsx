@@ -20,9 +20,11 @@ type Collection = {
 interface CollectionPageProps {
   userCollections: Collection[]
   setUserCollections: React.Dispatch<React.SetStateAction<Collection[]>>
+  setSelectedCollectionFromCollectionPage: (page: string) => void
+  changePage: (page: string) => void
   wallet: { details: ethereum.Details, contract: main.Main } | undefined
 }
-export const CollectionPage = ({ userCollections, setUserCollections, wallet }: CollectionPageProps) => {
+export const CollectionPage = ({ userCollections, setUserCollections, setSelectedCollectionFromCollectionPage, changePage, wallet }: CollectionPageProps) => {
     
   const [availableSets, setAvailableSets] = useState<[string, string][]>([]);
   const [selectedSet, setSelectedSet] = useState('');
@@ -50,7 +52,7 @@ export const CollectionPage = ({ userCollections, setUserCollections, wallet }: 
         const response = await fetch('http://localhost:8080/collections');
         const collections = await response.json();
         setUserCollections(collections);
-        console.log('userCollections', collections);
+        console.log('userCollections :', collections);
       } catch (error) {
         console.error('Error fetching collections:', error);
       }
@@ -61,7 +63,10 @@ export const CollectionPage = ({ userCollections, setUserCollections, wallet }: 
 
   // Fonction pour créer une collection
   const handleCreateCollection = async () => {
-    if (!selectedSet) return;
+    if (!selectedSet) {
+      alert('Veuillez sélectionner un set.');
+      return;
+    }
     setLoading(true);
     try {
       const response = await fetch(`http://localhost:8080/pokemon-set?id=${selectedSet}`, {
@@ -70,23 +75,23 @@ export const CollectionPage = ({ userCollections, setUserCollections, wallet }: 
       if (response.ok) {
         const set = await response.json();
         try {
-          //await wallet?.contract.createCollection(set.set.id, set.set.name, set.set.Cards.length);
-          //alert('Collection enregistrée sur la blockchain avec succès !');
-          await fetch(`http://localhost:8080/pokemon-set?set=${set.set.id}`, {
+          await wallet?.contract.createCollection(set.set.id, set.set.name, set.set.Cards.length);
+          await fetch(`http://localhost:8080/collections?id=${set.set.id}`, {
             method: 'POST',
           });
           setUserCollections([...userCollections, set.set]);
+          alert('Collection enregistrée sur la blockchain avec succès !');
         } catch (contractError) {
           alert("Vous n'êtes pas autorisé à créer une collection (super-admin requis) !");
         }
+      } else if (response.status === 400) {
+        alert("Le set existe déjà dans la base de données.");
       }
     } catch (error) {
-      if (error instanceof Error && error.message.includes("SetExistsError")) {
-          alert("Le set existe déjà dans la base de données.");
-      } else {
-        console.error('Error creating collection:', error)
-      }
+      console.error('Error creating collection:', error)
     }
+    setLoading(false);
+    
   };
 
   return (
@@ -116,7 +121,7 @@ export const CollectionPage = ({ userCollections, setUserCollections, wallet }: 
         <h2>Vos collections</h2>
         <div className={styles.collectionGrid}>
           {userCollections.map((collection) => (
-            <div key={collection.name} className={styles.collectionItem}>
+            <div key={collection.name} className={styles.collectionItem} onClick={() => { changePage("mintPage"); setSelectedCollectionFromCollectionPage(collection.name)}}>
               <img 
                 src={`https://images.pokemontcg.io/${collection.id}/logo.png`} 
                 alt={collection.name} 

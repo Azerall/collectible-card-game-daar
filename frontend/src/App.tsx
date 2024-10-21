@@ -66,15 +66,18 @@
     const [userCollections, setUserCollections] = useState<Collection[]>([]);
     const [page, setPage] = useState("homePage");
 
+    const [selectedCollectionFromCollectionPage, setSelectedCollectionFromCollectionPage] = useState<string>('');
+    const [selectedCardFromUserPage, setSelectedCardFromUserPage] = useState<Card | undefined>(undefined);
+
     useEffect(() => {
       if (!wallet) return
-      console.log('wallet', wallet)
+      console.log('Wallet', wallet)
     } , [wallet])
 
     useEffect(() => {
       const fetchAccounts = async () => {
         const accounts_ = await web3.eth.getAccounts()
-        console.log('accounts', accounts_)
+        console.log('Accounts', accounts_)
         setAccounts(accounts_)
       }
       fetchAccounts()
@@ -82,6 +85,8 @@
     
     // Fonction pour changer de page
     const changePage = (page: string) => {
+      setSelectedCollectionFromCollectionPage('');
+      setSelectedCardFromUserPage(undefined);
       setPage(page);
     }
 
@@ -106,7 +111,7 @@
         <div className={styles.maincontent}>
           <header className={styles.header}>
             <nav className={styles.nav}>
-              <img src="/logo.png" alt="Logo" className={styles.logo} />
+              <img src="/logo.png" alt="Logo" className={styles.logo} onClick={() => changePage("homePage")}/>
               <ul className={styles.navlinks}>
                 <li onClick={() => changePage("homePage")}>Accueil</li>
                 <li onClick={() => changePage("collectionPage")}>Collections</li>
@@ -116,9 +121,27 @@
             </nav>
           </header>
           { page==="homePage"? <HomePage/> : "" }
-          { page==="collectionPage"? <CollectionPage userCollections={userCollections} setUserCollections={setUserCollections} wallet={wallet}/> : "" }
-          { page==="userPage"? <UserPage/> : "" }
-          { page==="mintPage"? <MintPage  userCollections={userCollections} wallet={wallet} accounts={accounts}/> : "" }
+          { page==="collectionPage"? 
+            <CollectionPage 
+              userCollections={userCollections} 
+              setUserCollections={setUserCollections} 
+              setSelectedCollectionFromCollectionPage={setSelectedCollectionFromCollectionPage}
+              changePage={changePage}
+              wallet={wallet}/> : "" }
+          { page==="userPage"? 
+            <UserPage 
+              userCollections={userCollections} 
+              setSelectedCardFromUserPage={setSelectedCardFromUserPage}
+              changePage={changePage}
+              wallet={wallet} 
+              accounts={accounts}/> : "" }
+          { page==="mintPage"? 
+            <MintPage 
+              userCollections={userCollections} 
+              selectedCollectionFromCollectionPage={selectedCollectionFromCollectionPage}
+              selectedCardFromUserPage={selectedCardFromUserPage}
+              wallet={wallet} 
+              accounts={accounts}/> : "" }
         </div>
         
       </div>

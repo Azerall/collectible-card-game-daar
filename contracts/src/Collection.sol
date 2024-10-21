@@ -6,10 +6,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Collection is ERC721, Ownable {
 
-  event NewCard(uint cardNumber, string name, string image);
-
   struct Card {
-    uint256 cardNumber;
+    string cardNumber;
     string name;
     string image;
   }
@@ -21,6 +19,7 @@ contract Collection is ERC721, Ownable {
   Card[] public cards;
   mapping (uint => address) public cardToOwner; // Mapping des Token IDs vers les adresses des propriétaires
   mapping (address => uint) ownerCardCount; // Mapping des adresses des propriétaires vers le nombre de cartes qu'ils possèdent
+  mapping (string => address) public cardNumberToOwner; // Mapping des IDs des cartes vers les adresses des propriétaires
 
   constructor(string memory _name, string memory _symbol, uint256 _cardCount) ERC721(_name, _symbol) Ownable(msg.sender) {
     collectionName = _name;
@@ -29,38 +28,59 @@ contract Collection is ERC721, Ownable {
   }
   
   // Fonction pour récupérer les cartes d'un utilisateur
-  function getCardsByOwner(address _owner) external view returns(uint[] memory) {
-    uint[] memory result = new uint[](ownerCardCount[_owner]);
+  function getCardsByOwner(address _owner) external view returns(string[] memory, string[] memory, string[] memory) {
+    uint count = ownerCardCount[_owner];
+    string[] memory cardNumbers = new string[](count);
+    string[] memory cardNames = new string[](count);
+    string[] memory cardImages = new string[](count);
+
     uint counter = 0;
     for (uint i = 0; i < cards.length; i++) {
-      if (cardToOwner[i] == _owner) {
-        result[counter++] = i;
-      }
+        if (cardNumberToOwner[cards[i].cardNumber] == _owner) {
+            cardNumbers[counter] = cards[i].cardNumber;
+            cardNames[counter] = cards[i].name;
+            cardImages[counter] = cards[i].image;
+            counter++;
+        }
     }
-    return result;
+    return (cardNumbers, cardNames, cardImages);
+  }
+
+  // Fonction pour récupérer le propriétaire d'une carte
+  function getCardOwner(string memory _cardNumber) external view returns(address) {
+    return cardNumberToOwner[_cardNumber];
   }
 
   // Fonction pour minter une carte pour un utilisateur spécifique
-  function mintCard(address _to, uint256 _cardNumber, string memory _name, string memory _image) external {
-      require(msg.sender == admin); // Seul l'administrateur peut mint une carte
+  function mintCard(address _to, string memory _cardNumber, string memory _name, string memory _image) external {
+      require(msg.sender == admin, "Seul l'admin de la collection peut mint les cartes");
 
       cards.push(Card(_cardNumber, _name, _image));
       uint id = cards.length - 1;
       cardToOwner[id] = _to;
       ownerCardCount[_to]++;
+      cardNumberToOwner[_cardNumber] = _to;
 
       _safeMint(_to, id); // Mint le NFT pour l'utilisateur
   }
 
   // Transfert d'une carte de l'adresse _from vers l'adresse _to
-  function transferCard(address _from, address _to, uint256 _tokenId) external {
-      require(_from == ownerOf(_tokenId));
+  function transferCard(address _from, address _to, string memory _cardNumber) external {
+      uint tokenId;
+      for (uint i = 0; i < cards.length; i++) {
+          if (keccak256(abi.encodePacked(cards[i].cardNumber)) == keccak256(abi.encodePacked(_cardNumber))) {
+              tokenId = i;
+              break;
+          }
+      }
+      require(_from == ownerOf(tokenId));
       
-      cardToOwner[_tokenId] = _to;
+      cardToOwner[tokenId] = _to;
       ownerCardCount[_from]--;
       ownerCardCount[_to]++;
+      cardNumberToOwner[cards[tokenId].cardNumber] = _to;
 
-      safeTransferFrom(_from, _to, _tokenId); // Transfère le NFT de l'ancien propriétaire au nouveau
+      safeTransferFrom(_from, _to, tokenId); // Transfère le NFT de l'ancien propriétaire au nouveau
   }
 
   // Fonction pour récupérer le nombre de cartes d'un utilisateur

@@ -16,18 +16,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type User struct {
-	ID          uint         `gorm:"primaryKey"`
-	Name        string       `json:"name"`
-	MintedCards []MintedCard `gorm:"foreignKey:UserID"` // Relation 1-N avec MintedCard
-}
-
-type MintedCard struct {
-	ID     uint `gorm:"primaryKey"` // Identifiant unique, représente le NFT
-	CardID uint // Clé étrangère vers Card
-	UserID uint // Clé étrangère vers User
-}
-
 // Structure pour stocker les données d'une carte
 type Card struct {
 	ID       string `gorm:"primaryKey" json:"id"` // Identifiant unique de la carte
@@ -124,10 +112,9 @@ func pokemonSetHandler(c *gin.Context, db *gorm.DB) {
 	setId := c.Query("id") // Récupère l'id du set depuis les paramètres de requête
 	pokemonSet, err := fetchPokemonSet(setId, db)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{"set": pokemonSet})
 }
 
@@ -220,7 +207,7 @@ func main() {
 	log.Println("Connected to database")
 
 	// Migration de la structure des tables
-	db.AutoMigrate(&Card{}, &User{}, &MintedCard{}, &PokemonSet{})
+	db.AutoMigrate(&Card{}, &PokemonSet{})
 
 	// Initialisation du routeur Gin
 	r := gin.Default()
