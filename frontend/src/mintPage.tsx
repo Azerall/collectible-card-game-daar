@@ -1,7 +1,7 @@
-import React from 'react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useState } from 'react'
 import styles from './styles.module.css'
-
+import * as ethereum from '@/lib/ethereum'
+import * as main from '@/lib/main'
 
 type Card = {
   id: string;
@@ -18,9 +18,11 @@ type Collection = {
 
 interface MintPageProps {
   userCollections: Collection[]
+  wallet: { details: ethereum.Details, contract: main.Main } | undefined
+  accounts: string[] | undefined
 }
 
-export const MintPage = ({ userCollections }: MintPageProps) => {
+export const MintPage = ({ userCollections, wallet, accounts }: MintPageProps) => {
 
   const [selected, setSelected] = useState<string>('');
   const selectedCollection = userCollections.find((collection) => collection.name === selected);
@@ -29,14 +31,13 @@ export const MintPage = ({ userCollections }: MintPageProps) => {
   const [isCardOpen, setIsCardOpen] = useState(false);
 
   const openCard = (card: Card) => {
-    console.log("openCard", card);
-    setSelectedCard(card);
-    setIsCardOpen(true);
-  };
-
-  const closeCard = () => {
-    setSelectedCard(null);
-    setIsCardOpen(false);
+    if (isCardOpen) {
+      setSelectedCard(null);
+      setIsCardOpen(false);
+    } else {
+      setSelectedCard(card);
+      setIsCardOpen(true);
+    }
   };
 
   return(
@@ -51,7 +52,7 @@ export const MintPage = ({ userCollections }: MintPageProps) => {
               &#8592;
             </div>
             <h2>Attribuez cette carte</h2>
-            <MintForm selectedCard={selectedCard} />
+            <MintForm selectedCard={selectedCard} wallet={wallet} accounts={accounts}/>
           </div>) 
 
           :
@@ -92,9 +93,11 @@ export const MintPage = ({ userCollections }: MintPageProps) => {
 
 interface MintFormProps {
   selectedCard: Card | null;
+  wallet: { details: ethereum.Details, contract: main.Main } | undefined
+  accounts: string[] | undefined
 }
 
-const MintForm = ({ selectedCard }: MintFormProps) => {
+const MintForm = ({ selectedCard, wallet, accounts }: MintFormProps) => {
   const [isMined, setIsMined] = useState(false);
   const [selectedUser, setSelectedUser] = useState('');
   const [manualAddress, setManualAddress] = useState('');
@@ -114,9 +117,11 @@ const MintForm = ({ selectedCard }: MintFormProps) => {
             <p>Choisissez un utilisateur :</p>
             <select onChange={(e) => setSelectedUser(e.target.value)} value={selectedUser}>
               <option value="">Sélectionner un utilisateur</option>
-              {/* Remplacer par une liste d'utilisateurs */}
-              <option value="user1">User 1</option>
-              <option value="user2">User 2</option>
+              {accounts?.map((account) => (
+                <option key={account} value={account}>
+                  {account}
+                </option>
+              ))}
             </select>
             <p>Ou entrer une adresse manuellement :</p>
             <input

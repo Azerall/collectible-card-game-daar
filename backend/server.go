@@ -80,7 +80,7 @@ func fetchPokemonSet(setId string, db *gorm.DB) (PokemonSet, error) {
 	err = db.Where("id = ?", setID).First(&existingSet).Error
 	if err == nil {
 		// Si aucune erreur, cela signifie que le set existe déjà
-		return existingSet, fmt.Errorf("Le set existe déjà dans la base de données")
+		return existingSet, fmt.Errorf("SetExistsError: Le set existe déjà dans la base de données")
 	}
 
 	// Appel pour récupérer les cartes de ce set
@@ -116,10 +116,6 @@ func fetchPokemonSet(setId string, db *gorm.DB) (PokemonSet, error) {
 		Cards: cards,
 	}
 
-	if err := db.Create(&newSet).Error; err != nil {
-		return PokemonSet{}, fmt.Errorf("Erreur lors de l'insertion du set dans la base de données : %v", err)
-	}
-
 	// Retourne le set de cartes avec le nom du set
 	return newSet, nil
 }
@@ -133,6 +129,24 @@ func pokemonSetHandler(c *gin.Context, db *gorm.DB) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"set": pokemonSet})
+}
+
+func createCollectionHandler(c *gin.Context, db *gorm.DB) {
+	setId := c.Query("id") // Récupère l'id du set depuis les paramètres de requête
+	pokemonSet, err := fetchPokemonSet(setId, db)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Sauvegarder le set récupéré dans la base de données
+	if err := db.Create(&pokemonSet).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Erreur lors de l'enregistrement du set dans la base de données"})
+		return
+	}
+
+	// Répondre avec succès et retourner les informations du set créé
+	c.JSON(http.StatusOK, gin.H{"message": "Collection créée avec succès", "set": pokemonSet})
 }
 
 func fetchAllPokemonSets() ([][2]string, error) {
@@ -218,8 +232,11 @@ func main() {
 		AllowHeaders:    []string{"Accept", "Content-Type", "Authorization"},
 	}))
 
-	r.POST("/pokemon-set", func(c *gin.Context) { // Route pour créer un set Pokémon
+	r.POST("/pokemon-set", func(c *gin.Context) { // Route pour récupérer un set Pokémon
 		pokemonSetHandler(c, db)
+	})
+	r.POST("/collections", func(c *gin.Context) { // Route pour créer une collection
+		createCollectionHandler(c, db)
 	})
 	r.GET("/pokemon-sets", func(c *gin.Context) { // Route pour récupérer tous les sets Pokémon
 		pokemonSetsHandler(c)

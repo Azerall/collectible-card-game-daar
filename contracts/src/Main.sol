@@ -10,13 +10,17 @@ contract Main {
 
   mapping(address => bool) private superAdmins; // Liste des super admins autorisés à créer des collections et mint des cartes
 
-  constructor() {
+  constructor(address[] memory _admins) {
     count = 0;
-    superAdmins[0xf443e27A591D9BCaeD1BD9391F0553f73460CfF5] = true;
+    //remplir le map superAdmins
+    for (uint i = 0; i < _admins.length; i++) {
+      superAdmins[_admins[i]] = true;
+    }
   }
 
   // Fonction pour créer une collection
   function createCollection(string calldata collectionId, string calldata name, uint256 cardCount) external {
+    require(superAdmins[msg.sender]);
     collections[collectionId] = new Collection(name, "PKM", cardCount);
     count++;
   }
@@ -25,6 +29,7 @@ contract Main {
   function getUserCards(string calldata  collectionId, address owner) external view returns (uint[] memory) {
     return collections[collectionId].getCardsByOwner(owner);
   }
+
   // Fonction pour mint une carte dans une collection spécifique
   function mintCard(string calldata collectionId, address to, uint256 cardNumber, string calldata name, string calldata image) external {
     collections[collectionId].mintCard(to, cardNumber, name, image);

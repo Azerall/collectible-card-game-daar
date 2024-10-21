@@ -1,6 +1,8 @@
 import React from 'react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import styles from './styles.module.css'
+import * as ethereum from '@/lib/ethereum'
+import * as main from '@/lib/main'
 
 type Card = {
   id: string;
@@ -18,8 +20,9 @@ type Collection = {
 interface CollectionPageProps {
   userCollections: Collection[]
   setUserCollections: React.Dispatch<React.SetStateAction<Collection[]>>
+  wallet: { details: ethereum.Details, contract: main.Main } | undefined
 }
-export const CollectionPage = ({ userCollections, setUserCollections }: CollectionPageProps) => {
+export const CollectionPage = ({ userCollections, setUserCollections, wallet }: CollectionPageProps) => {
     
   const [availableSets, setAvailableSets] = useState<[string, string][]>([]);
   const [selectedSet, setSelectedSet] = useState('');
@@ -47,7 +50,7 @@ export const CollectionPage = ({ userCollections, setUserCollections }: Collecti
         const response = await fetch('http://localhost:8080/collections');
         const collections = await response.json();
         setUserCollections(collections);
-        console.log(collections);
+        console.log('userCollections', collections);
       } catch (error) {
         console.error('Error fetching collections:', error);
       }
@@ -65,12 +68,24 @@ export const CollectionPage = ({ userCollections, setUserCollections }: Collecti
         method: 'POST',
       });
       if (response.ok) {
-        alert('Collection créée avec succès !');
         const set = await response.json();
-        setUserCollections([...userCollections, set.set]);
+        try {
+          //await wallet?.contract.createCollection(set.set.id, set.set.name, set.set.Cards.length);
+          //alert('Collection enregistrée sur la blockchain avec succès !');
+          await fetch(`http://localhost:8080/pokemon-set?set=${set.set.id}`, {
+            method: 'POST',
+          });
+          setUserCollections([...userCollections, set.set]);
+        } catch (contractError) {
+          alert("Vous n'êtes pas autorisé à créer une collection (super-admin requis) !");
+        }
       }
     } catch (error) {
-      console.error('Error creating collection:', error);
+      if (error instanceof Error && error.message.includes("SetExistsError")) {
+          alert("Le set existe déjà dans la base de données.");
+      } else {
+        console.error('Error creating collection:', error)
+      }
     }
   };
 
