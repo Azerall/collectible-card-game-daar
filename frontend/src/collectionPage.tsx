@@ -76,13 +76,18 @@ export const CollectionPage = ({ userCollections, setUserCollections, setSelecte
         const set = await response.json();
         try {
           await wallet?.contract.createCollection(set.set.id, set.set.name, set.set.Cards.length);
-          await fetch(`http://localhost:8080/collections?id=${set.set.id}`, {
+          
+          /*await fetch(`http://localhost:8080/collections?id=${set.set.id}`, {
             method: 'POST',
           });
-          setUserCollections([...userCollections, set.set]);
+          setUserCollections([...userCollections, set.set]);*/
           alert('Collection enregistrée sur la blockchain avec succès !');
         } catch (contractError) {
-          alert("Vous n'êtes pas autorisé à créer une collection (super-admin requis) !");
+          if ((contractError as any).code === "ACTION_REJECTED") {
+            alert('Vous avez refusé la transaction.');
+          } else {
+            alert("Vous n'êtes pas autorisé à créer une collection (super-admin requis) !");
+          }
         }
       } else if (response.status === 400) {
         alert("Le set existe déjà dans la base de données.");

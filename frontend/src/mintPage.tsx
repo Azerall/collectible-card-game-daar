@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import styles from './styles.module.css'
 import * as ethereum from '@/lib/ethereum'
 import * as main from '@/lib/main'
+import { ethers } from 'ethers'
 
 type Card = {
   id: string;
@@ -113,19 +114,17 @@ interface MintFormProps {
 }
 
 const MintForm = ({ selectedCard, wallet, accounts }: MintFormProps) => {
-  const [isMined, setIsMined] = useState(false);
-  const [owner, setOwner] = useState('');
+  const [owners, setOwners] = useState<string[]>([]);
   const [selectedUser, setSelectedUser] = useState('');
 
   useEffect(() => {
     const getOwner = async () => {
       try {
         console.log("Carte sélectionnée : ", selectedCard);
-        const owner = await wallet?.contract.getCardOwner(selectedCard?.SetID, selectedCard?.id);
-        if (owner != "0x0000000000000000000000000000000000000000") {
-          setOwner(owner);
-          console.log("Propriétaire de la carte : ", owner);
-          setIsMined(true);
+        const owners = await wallet?.contract.getCardOwners(selectedCard?.SetID, selectedCard?.id);
+        if (owners) {
+          setOwners(owners);
+          console.log("Propriétaires de la carte : ", owners);
         }
       } catch (contractError) {
         console.log("Erreur lors de la récupération du propriétaire de la carte : ", contractError);
@@ -140,27 +139,12 @@ const MintForm = ({ selectedCard, wallet, accounts }: MintFormProps) => {
       alert("Veuillez sélectionner un utilisateur.");
       return;
     }
-    if (isMined) {
-      if (selectedUser === owner) {
-        alert("Cette carte est déjà attribuée à cet utilisateur.");
-      } else {
-        try {
-          await wallet?.contract.transferCard(selectedCard?.SetID, selectedCard?.id, owner, selectedUser);
-          alert("La carte a été transférée avec succès !");
-          setOwner(selectedUser);
-        } catch (contractError) {
-          console.log("Erreur lors du transfert de la carte : ", contractError);
-        }
-      }
-    } else {
-      try {
-        await wallet?.contract.mintCard(selectedCard?.SetID, selectedUser, selectedCard?.id, selectedCard?.name, selectedCard?.imageUrl);
-        alert("La carte a été attribuée avec succès !");
-        setIsMined(true);
-        setOwner(selectedUser);
-      } catch (contractError) {
-        console.log("Erreur lors de l'attribution de la carte : ", contractError);
-      }
+    try {
+      await wallet?.contract.mintCard(selectedCard?.SetID, ethers.utils.getAddress(selectedUser), selectedCard?.id, selectedCard?.name, selectedCard?.imageUrl);
+      alert("La carte a été attribuée avec succès !");
+      setOwners([...owners, selectedUser]);
+    } catch (contractError) {
+      console.log("Erreur lors de l'attribution de la carte : ", contractError);
     }
   };
 
@@ -168,13 +152,15 @@ const MintForm = ({ selectedCard, wallet, accounts }: MintFormProps) => {
     <div className={styles.cardFormContent}>
       <img src={selectedCard?.imageUrl} alt={selectedCard?.name} className={styles.cardFormImage} />
       <form onSubmit={handleSubmit}>
-        {isMined ? (
+        {owners ? (
           <div>
-            <p>Cette carte a déjà été attribuée à : <br></br>{owner}</p>
-            <p>Choisissez un utilisateur à qui la transférer :</p>
+            <p>Cette carte a déjà été minée à : <br></br></p>
+            {owners.map((owner) => (
+              <p key={owner}>{owner}</p>
+            ))}
           </div>
         ) : (
-          <p>Choisissez un utilisateur à qui l'attribuer :</p>
+          <p>Choisissez un utilisateur à qui la miner :</p>
         )}
         <div>
           <select onChange={(e) => setSelectedUser(e.target.value)} value={selectedUser}>

@@ -8,6 +8,8 @@
   import { CollectionPage } from './collectionPage'
   import { UserPage } from './userPage'
   import { MintPage } from './mintPage'
+  import { ExchangePage } from './exchangePage'
+  import { BoosterPage } from './boosterPage'
 
   type Canceler = () => void
   const useAffect = (
@@ -97,7 +99,7 @@
           const response = await fetch('http://localhost:8080/collections');
           const collections = await response.json();
           setUserCollections(collections);
-          console.log(collections);
+          console.log('Collections :', collections);
         } catch (error) {
           console.error('Error fetching collections:', error);
         }
@@ -116,7 +118,9 @@
                 <li onClick={() => changePage("homePage")}>Accueil</li>
                 <li onClick={() => changePage("collectionPage")}>Collections</li>
                 <li onClick={() => changePage("userPage")}>Utilisateurs</li>
-                <li onClick={() => changePage("mintPage")}>Mint</li>
+                <li onClick={() => changePage("mintPage")}>Minter</li>
+                <li onClick={() => changePage("exchangePage")}>Echanger</li>
+                <li onClick={() => changePage("boosterPage")}>Booster</li>
               </ul>
             </nav>
           </header>
@@ -140,6 +144,15 @@
               userCollections={userCollections} 
               selectedCollectionFromCollectionPage={selectedCollectionFromCollectionPage}
               selectedCardFromUserPage={selectedCardFromUserPage}
+              wallet={wallet} 
+              accounts={accounts}/> : "" }
+          { page==="exchangePage"? 
+            <ExchangePage 
+              userCollections={userCollections} 
+              wallet={wallet} 
+              accounts={accounts}/> : "" }
+          { page==="boosterPage"?
+            <BoosterPage 
               wallet={wallet} 
               accounts={accounts}/> : "" }
         </div>

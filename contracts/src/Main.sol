@@ -30,26 +30,35 @@ contract Main {
   }
 
   // Fonction pour mint une carte dans une collection spécifique
-  function mintCard(string calldata collectionId, address to, string calldata cardNumber, string calldata name, string calldata image) external {
+  function mintCard(string calldata collectionId, address to, string calldata id, string calldata name, string calldata image) external {
     require(superAdmins[msg.sender], "N'est pas un super-admin");
-    collections[collectionId].mintCard(to, cardNumber, name, image);
+    collections[collectionId].mintCard(to, id, name, image);
   }
 
   // Transfère une carte d'un propriétaire à un autre dans une collection
-  function transferCard(string calldata collectionId, string calldata _cardNumber, address from, address to) external {
+  function transferCard(string calldata collectionId, address from, address to, uint tokenId) external {
     require(superAdmins[msg.sender], "N'est pas un super-admin");
     Collection collection = collections[collectionId];
-    collection.transferCard(from, to, _cardNumber);
+    collection.transferCard(from, to, tokenId);
   }
 
   // Fonction pour récupérer le propriétaire d'une carte dans une collection
-  function getCardOwner(string calldata collectionId, string calldata cardNumber) external view returns (address) {
-    return collections[collectionId].getCardOwner(cardNumber);
+  function getCardOwner(string calldata collectionId, uint tokenId) external view returns (address) {
+    return collections[collectionId].ownerOf(tokenId);
+  }
+
+  // Fonction pour récupérer les propriétaires d'une carte dans une collection
+  function getCardOwners(string calldata collectionId, string calldata id) external view returns (address[] memory) {
+    return collections[collectionId].getCardOwners(id);
   }
 
   // Fonction pour récupérer le nombre de collections
   function getCount() external view returns (int) {
     return count;
+  }
+
+  function getCardToken(string calldata collectionId, address owner, string calldata id) external view returns (int) {
+    return collections[collectionId].getCardToken(owner, id);
   }
 
 }
