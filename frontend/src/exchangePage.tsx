@@ -96,6 +96,10 @@ export const ExchangePage = ({ userCollections, wallet, accounts }: ExchangePage
   }, [selectedUser2]);
 
   const exchangeCards = async () => {
+    if (!selectedCard1 || !selectedCard2) {
+      alert("Veuillez sélectionner deux cartes à échanger.");
+      return;
+    }
     try {
       console.log("Echange des cartes : ", selectedCard1, selectedCard2);
       const token1 = await wallet?.contract.getCardToken(selectedCard1?.SetID, selectedUser1, selectedCard1?.id);
@@ -160,10 +164,9 @@ export const ExchangePage = ({ userCollections, wallet, accounts }: ExchangePage
                     </div>
                   )}
                 </div>
-
-                <div className={styles.createButton}>
-                  <button onClick={() => exchangeCards()}>Echanger</button>
-                </div>
+              </div>
+              <div className={styles.exchangeButton}>
+                <button onClick={() => exchangeCards()}>Echanger</button>
               </div>
           </section>
       </div>

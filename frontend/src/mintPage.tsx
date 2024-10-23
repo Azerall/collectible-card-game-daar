@@ -117,7 +117,7 @@ const MintForm = ({ selectedCard, wallet, accounts }: MintFormProps) => {
   const [owners, setOwners] = useState<string[]>([]);
   const [selectedUser, setSelectedUser] = useState('');
 
-  useEffect(() => {
+  useEffect(() => {     
     const getOwner = async () => {
       try {
         console.log("Carte sélectionnée : ", selectedCard);
@@ -152,7 +152,7 @@ const MintForm = ({ selectedCard, wallet, accounts }: MintFormProps) => {
     <div className={styles.cardFormContent}>
       <img src={selectedCard?.imageUrl} alt={selectedCard?.name} className={styles.cardFormImage} />
       <form onSubmit={handleSubmit}>
-        {owners ? (
+        {owners.length ? (
           <div>
             <p>Cette carte a déjà été minée à : <br></br></p>
             {owners.map((owner) => (

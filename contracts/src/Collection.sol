@@ -4,6 +4,8 @@ pragma solidity ^0.8;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+import "hardhat/console.sol";
+
 contract Collection is ERC721, Ownable {
 
   struct Card {
@@ -20,6 +22,7 @@ contract Collection is ERC721, Ownable {
 
   Card[] public cards;
   mapping (string => uint) public cardIdToIndex; // Mapping des IDs des cartes vers les indices des cartes
+  mapping (string => bool) public cardExists; // Mapping des IDs des cartes vers leur existence
   mapping (uint256 => uint256) public tokenToCard; // Mapping des Token IDs vers les indices des cartes
   mapping (uint256 => address) public tokenToOwner; // Mapping des Token IDs vers les adresses des propriétaires
   mapping (address => uint) public ownerTokenCount; // Mapping des adresses des propriétaires vers le nombre de minted cartes qu'ils possèdent
@@ -54,11 +57,11 @@ contract Collection is ERC721, Ownable {
   function mintCard(address _to, string memory _id, string memory _name, string memory _image) external {
       require(msg.sender == _admin, "Seul l'admin de la collection peut minter les cartes");
 
-      if (cardIdToIndex[_id] == 0 && cards.length > 0) {
+      if (!cardExists[_id]) {
         require(cards.length < cardCount, "Nombre maximum de cartes atteint");
         cards.push(Card(_id, _name, _image));
         cardIdToIndex[_id] = cards.length - 1;
-        tokenToCard[_currentTokenId] = cards.length - 1;
+        cardExists[_id] = true;
       } 
 
       tokenToCard[_currentTokenId] = cardIdToIndex[_id];
@@ -91,6 +94,7 @@ contract Collection is ERC721, Ownable {
     address[] memory owners = new address[](_currentTokenId);
     uint counter = 0;
     for (uint i = 0; i < _currentTokenId; i++) {
+        require(tokenToCard[i] < cards.length);
         if (keccak256(abi.encodePacked(cards[tokenToCard[i]].id)) == keccak256(abi.encodePacked(_id))) {
             owners[counter] = tokenToOwner[i];
             counter++;
@@ -99,6 +103,7 @@ contract Collection is ERC721, Ownable {
     return owners;
   }
 
+  // Fonction pour récupérer le token ID d'une carte à partir de l'adresse du propriétaire et de l'ID de la carte
   function getCardToken(address owner, string memory _id) external view returns (int) {
     for (uint i = 0; i < _currentTokenId; i++) {
         if (tokenToOwner[i] == owner && keccak256(abi.encodePacked(cards[tokenToCard[i]].id)) == keccak256(abi.encodePacked(_id))) {
@@ -109,4 +114,22 @@ contract Collection is ERC721, Ownable {
     }
     return -1;
   }
+
+  function supportsInterface(bytes4 interfaceID) public pure override returns (bool) {
+    return interfaceID == type(ERC721).interfaceId;
+  }
+
+  function name() public view override returns (string memory) {
+        return collectionName;
+    }
+
+  function symbol() public pure override returns (string memory) {
+    return "PKM";
+  }
+
+  function decimals() public pure returns (uint8) {
+    return 0;
+  }
+
+
 }
