@@ -8,6 +8,8 @@ import (
 
 	"encoding/json"
 	"fmt"
+	"math/rand"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -198,6 +200,52 @@ func getAllCollections(c *gin.Context, db *gorm.DB) {
 	c.JSON(http.StatusOK, collections)
 }
 
+func createBoosterHandler(c *gin.Context, db *gorm.DB) {
+	// Récupération de l'ID du set de cartes
+	setId := c.Query("id")
+	cards, err := createBooster(setId, db)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Booster créé avec succès", "booster": cards})
+}
+
+func createBooster(setId string, db *gorm.DB) ([]Card, error) {
+	// Recherche des cartes du set dans la base de données SQLite
+	var cardsInSet []Card
+	err := db.Where("set_id = ?", setId).Find(&cardsInSet).Error
+	if err != nil {
+		return nil, fmt.Errorf("Erreur lors de la récupération des cartes du set dans la base de données : %v", err)
+	}
+
+	if len(cardsInSet) == 0 {
+		return nil, fmt.Errorf("Aucune carte trouvée pour ce set dans la base de données.")
+	}
+
+	// Sélectionner aléatoirement 10 cartes du set
+	var booster []Card
+	rand.Seed(time.Now().UnixNano())
+	alreadyAdded := make(map[string]bool)
+	collectionLength := len(cardsInSet)
+	counter := 0
+
+	for counter < 10 {
+		randomIndex := rand.Intn(collectionLength)
+		selectedCard := cardsInSet[randomIndex]
+
+		// Assurez-vous que chaque carte est unique dans le booster
+		if !alreadyAdded[selectedCard.ID] {
+			booster = append(booster, selectedCard)
+			alreadyAdded[selectedCard.ID] = true
+			counter++
+		}
+	}
+
+	return booster, nil
+}
+
 func main() {
 	// Connexion à la base de données SQLite
 	db, err := gorm.Open(sqlite.Open("cards.db"), &gorm.Config{})
@@ -230,6 +278,9 @@ func main() {
 	})
 	r.GET("/collections", func(c *gin.Context) { // Route pour récupérer toutes les collections
 		getAllCollections(c, db)
+	})
+	r.POST("/create-booster", func(c *gin.Context) { // Route pour créer un booster
+		createBoosterHandler(c, db)
 	})
 
 	// Démarrage du serveur Gin sur le port 8080

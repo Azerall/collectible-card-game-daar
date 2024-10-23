@@ -99,7 +99,6 @@
           const response = await fetch('http://localhost:8080/collections');
           const collections = await response.json();
           setUserCollections(collections);
-          console.log('Collections :', collections);
         } catch (error) {
           console.error('Error fetching collections:', error);
         }
@@ -153,6 +152,7 @@
               accounts={accounts}/> : "" }
           { page==="boosterPage"?
             <BoosterPage 
+              userCollections={userCollections} 
               wallet={wallet} 
               accounts={accounts}/> : "" }
         </div>

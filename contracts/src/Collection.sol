@@ -2,11 +2,8 @@
 pragma solidity ^0.8;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "hardhat/console.sol";
-
-contract Collection is ERC721, Ownable {
+contract Collection is ERC721 {
 
   struct Card {
     string id;
@@ -17,21 +14,13 @@ contract Collection is ERC721, Ownable {
   string public collectionName;
   uint256 public cardCount;
 
-  address private _admin; // L'administrateur de la collection
-  uint256 private _currentTokenId; // ID du dernier token minté
-
   Card[] public cards;
-  mapping (string => uint) public cardIdToIndex; // Mapping des IDs des cartes vers les indices des cartes
-  mapping (string => bool) public cardExists; // Mapping des IDs des cartes vers leur existence
-  mapping (uint256 => uint256) public tokenToCard; // Mapping des Token IDs vers les indices des cartes
-  mapping (uint256 => address) public tokenToOwner; // Mapping des Token IDs vers les adresses des propriétaires
-  mapping (address => uint) public ownerTokenCount; // Mapping des adresses des propriétaires vers le nombre de minted cartes qu'ils possèdent
+  mapping (uint256 => address) public tokenToOwner; // Mapping des tokens vers les adresses des propriétaires
+  mapping (address => uint) public ownerTokenCount; // Mapping des adresses des propriétaires vers le nombre de tokens qu'ils possèdent
  
-  constructor(string memory _name, string memory _symbol, uint256 _cardCount) ERC721(_name, _symbol) Ownable(msg.sender) {
+  constructor(string memory _name, string memory _symbol, uint256 _cardCount) ERC721(_name, _symbol) {
     collectionName = _name;
     cardCount = _cardCount;
-    _admin = msg.sender; // Le créateur de la collection est l'administrateur
-    _currentTokenId = 0;
   }
   
   // Fonction pour récupérer les cartes d'un utilisateur
@@ -42,11 +31,11 @@ contract Collection is ERC721, Ownable {
     string[] memory cardImages = new string[](count);
 
     uint counter = 0;
-    for (uint i = 0; i < _currentTokenId; i++) {
+    for (uint i = 0; i < cards.length ; i++) {
         if (tokenToOwner[i] == _owner) {
-            cardIds[counter] = cards[tokenToCard[i]].id;
-            cardNames[counter] = cards[tokenToCard[i]].name;
-            cardImages[counter] = cards[tokenToCard[i]].image;
+            cardIds[counter] = cards[i].id;
+            cardNames[counter] = cards[i].name;
+            cardImages[counter] = cards[i].image;
             counter++;
         }
     }
@@ -55,47 +44,31 @@ contract Collection is ERC721, Ownable {
 
   // Fonction pour minter une carte pour un utilisateur spécifique
   function mintCard(address _to, string memory _id, string memory _name, string memory _image) external {
-      require(msg.sender == _admin, "Seul l'admin de la collection peut minter les cartes");
-
-      if (!cardExists[_id]) {
-        require(cards.length < cardCount, "Nombre maximum de cartes atteint");
-        cards.push(Card(_id, _name, _image));
-        cardIdToIndex[_id] = cards.length - 1;
-        cardExists[_id] = true;
-      } 
-
-      tokenToCard[_currentTokenId] = cardIdToIndex[_id];
-      tokenToOwner[_currentTokenId] = _to;
+      cards.push(Card(_id, _name, _image));
+      uint tokenId = cards.length - 1;
+      tokenToOwner[tokenId] = _to;
       ownerTokenCount[_to]++;
 
-      _safeMint(_to, _currentTokenId); // Mint le NFT pour l'utilisateur
-
-      _currentTokenId++;
+      _mint(_to, tokenId); // Mint le NFT pour l'utilisateur
   }
 
   // Transfert d'une minted carte de l'adresse _from vers l'adresse _to
   function transferCard(address _from, address _to, uint256 _tokenId) external {
-      require(_from == ownerOf(_tokenId));
+      require(_from == tokenToOwner[_tokenId]);
       
       tokenToOwner[_tokenId] = _to;
       ownerTokenCount[_from]--;
       ownerTokenCount[_to]++;
 
-      safeTransferFrom(_from, _to, _tokenId); // Transfère le NFT de l'ancien propriétaire au nouveau
-  }
-
-  // Fonction pour récupérer le propriétaire d'une minted carte
-  function ownerOf(uint256 _tokenId) public view override returns (address _owner) {
-    return tokenToOwner[_tokenId];
+      _transfer(_from, _to, _tokenId); // Transfert le NFT de l'utilisateur _from à l'utilisateur _to
   }
 
   // Fonction pour récupérer les propriétaires d'une carte
   function getCardOwners(string memory _id) external view returns (address[] memory) {
-    address[] memory owners = new address[](_currentTokenId);
+    address[] memory owners = new address[](cards.length);
     uint counter = 0;
-    for (uint i = 0; i < _currentTokenId; i++) {
-        require(tokenToCard[i] < cards.length);
-        if (keccak256(abi.encodePacked(cards[tokenToCard[i]].id)) == keccak256(abi.encodePacked(_id))) {
+    for (uint i = 0; i < cards.length; i++) {
+        if (keccak256(abi.encodePacked(cards[i].id)) == keccak256(abi.encodePacked(_id))) {
             owners[counter] = tokenToOwner[i];
             counter++;
         }
@@ -103,33 +76,14 @@ contract Collection is ERC721, Ownable {
     return owners;
   }
 
-  // Fonction pour récupérer le token ID d'une carte à partir de l'adresse du propriétaire et de l'ID de la carte
+  // Fonction pour récupérer le token d'une carte à partir de l'adresse du propriétaire et de l'ID de la carte
   function getCardToken(address owner, string memory _id) external view returns (int) {
-    for (uint i = 0; i < _currentTokenId; i++) {
-        if (tokenToOwner[i] == owner && keccak256(abi.encodePacked(cards[tokenToCard[i]].id)) == keccak256(abi.encodePacked(_id))) {
-            require(tokenToOwner[i] == owner);
-            require(tokenToCard[i] == cardIdToIndex[_id]);
+    for (uint i = 0; i < cards.length; i++) {
+        if (keccak256(abi.encodePacked(cards[i].id)) == keccak256(abi.encodePacked(_id)) && tokenToOwner[i] == owner) {
             return int(i);
         }
     }
     return -1;
   }
-
-  function supportsInterface(bytes4 interfaceID) public pure override returns (bool) {
-    return interfaceID == type(ERC721).interfaceId;
-  }
-
-  function name() public view override returns (string memory) {
-        return collectionName;
-    }
-
-  function symbol() public pure override returns (string memory) {
-    return "PKM";
-  }
-
-  function decimals() public pure returns (uint8) {
-    return 0;
-  }
-
 
 }

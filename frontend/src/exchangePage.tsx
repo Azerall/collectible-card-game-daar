@@ -33,18 +33,17 @@ export const ExchangePage = ({ userCollections, wallet, accounts }: ExchangePage
 
   useEffect(() => {
     if (selectedUser1) {
+      setUserCards1([]);
       // Récupérer les cartes de l'utilisateur sélectionné
       const getUserCards = async () => {
         try {
           let allUserCards: Card[] = [];
           for (let collection of userCollections) {
-            const [cardNumbers, cardNames, cardImages] = await wallet?.contract.getUserCards(collection.id, selectedUser1);
-            if (cardNumbers && cardNames && cardImages) {
-              console.log(`Cards from collection ${collection.id}:`, cardNumbers);
-          
+            const [cardIds, cardNames, cardImages] = await wallet?.contract.getUserCards(collection.id, selectedUser1);
+            if (cardIds && cardNames && cardImages) {
               // Mapper les trois tableaux en un tableau d'objets Card
-              const mappedCards = cardNumbers.map((cardNumber: string, index: number) => ({
-                id: cardNumber,
+              const mappedCards = cardIds.map((cardId: string, index: number) => ({
+                id: cardId,
                 name: cardNames[index],
                 imageUrl: cardImages[index],
                 SetID: collection.id,
@@ -55,28 +54,26 @@ export const ExchangePage = ({ userCollections, wallet, accounts }: ExchangePage
           }
           setUserCards1(allUserCards);
         } catch (contractError) {
-          console.log("Erreur lors de la récupération des cartes de l'utilisateur : ", contractError);
+          console.log("Erreur lors de la récupération des cartes de l'utilisateur 1 : ", contractError);
         }
       };
       getUserCards();
-      console.log("Cartes de l'utilisateur 1", selectedUser1, userCards1);
     }
   }, [selectedUser1]);
 
   useEffect(() => {
     if (selectedUser2) {
+      setUserCards2([]);
       // Récupérer les cartes de l'utilisateur sélectionné
       const getUserCards = async () => {
         try {
           let allUserCards: Card[] = [];
           for (let collection of userCollections) {
-            const [cardNumbers, cardNames, cardImages] = await wallet?.contract.getUserCards(collection.id, selectedUser2);
-            if (cardNumbers && cardNames && cardImages) {
-              console.log(`Cards from collection ${collection.id}:`, cardNumbers);
-          
+            const [cardIds, cardNames, cardImages] = await wallet?.contract.getUserCards(collection.id, selectedUser2);
+            if (cardIds && cardNames && cardImages) {
               // Mapper les trois tableaux en un tableau d'objets Card
-              const mappedCards = cardNumbers.map((cardNumber: string, index: number) => ({
-                id: cardNumber,
+              const mappedCards = cardIds.map((cardId: string, index: number) => ({
+                id: cardId,
                 name: cardNames[index],
                 imageUrl: cardImages[index],
                 SetID: collection.id,
@@ -87,17 +84,24 @@ export const ExchangePage = ({ userCollections, wallet, accounts }: ExchangePage
           }
           setUserCards2(allUserCards);
         } catch (contractError) {
-          console.log("Erreur lors de la récupération des cartes de l'utilisateur : ", contractError);
+          console.log("Erreur lors de la récupération des cartes de l'utilisateur 2 : ", contractError);
         }
       };
       getUserCards();
-      console.log("Cartes de l'utilisateur 2", selectedUser2, userCards2);
     }
   }, [selectedUser2]);
 
   const exchangeCards = async () => {
+    if (!selectedUser1 || !selectedUser2) {
+      alert("Veuillez sélectionner deux utilisateurs.");
+      return;
+    }
     if (!selectedCard1 || !selectedCard2) {
       alert("Veuillez sélectionner deux cartes à échanger.");
+      return;
+    }
+    if (selectedUser1 === selectedUser2) {
+      alert("Veuillez sélectionner deux utilisateurs différents.");
       return;
     }
     try {
@@ -105,11 +109,22 @@ export const ExchangePage = ({ userCollections, wallet, accounts }: ExchangePage
       const token1 = await wallet?.contract.getCardToken(selectedCard1?.SetID, selectedUser1, selectedCard1?.id);
       const token2 = await wallet?.contract.getCardToken(selectedCard2?.SetID, selectedUser2, selectedCard2?.id);
       console.log("Tokens : ", token1, token2);
-      await wallet?.contract.transferCard(selectedCard1?.SetID, selectedUser1, selectedUser2, token1);
-      await wallet?.contract.transferCard(selectedCard2?.SetID, selectedUser2, selectedUser1, token2);
-      console.log("Cartes échangées");
+      await wallet?.contract.setApprovalForAll(selectedCard1?.SetID, wallet?.contract.address, true);
+      await wallet?.contract.setApprovalForAll(selectedCard2?.SetID, wallet?.contract.address, true);
+      await wallet?.contract.tradeCards(selectedCard1?.SetID, selectedUser1, token1, selectedCard2?.SetID, selectedUser2, token2);
+      alert("Echange effectué avec succès !");
+      setSelectedUser1('');
+      setSelectedUser2('');
+      setUserCards1([]);
+      setUserCards2([]);
     } catch (contractError) {
-      console.log("Erreur lors de l'échange des cartes : ", contractError);
+      if ((contractError as any).code === "ACTION_REJECTED") {
+        alert('Vous avez refusé la transaction.');
+      } else if ((contractError as any).message.includes("Super-admin requis.")) {
+        alert("Vous n'êtes pas autorisé à créer une collection (super-admin requis) !");
+      } else {
+        console.log(contractError);
+      }
     }
   }
 
@@ -132,10 +147,10 @@ export const ExchangePage = ({ userCollections, wallet, accounts }: ExchangePage
                       </select>
                   </div>
                   {userCards1 && (
-                    <div className={styles.cardsContainer}>
+                    <div className={styles.cardsExchangeContainer}>
                       {userCards1.map((card) => (
-                        <div key={card.id} className={styles.card} onClick={() => setSelectedCard1(card)}>
-                          <img src={card.imageUrl} alt={card.name} className={styles.cardImage}/>
+                        <div key={card.id} className={selectedCard1 === card ? styles.cardExchangeSelected : styles.cardExchange} onClick={() => selectedCard1 === card ? setSelectedCard1(undefined) : setSelectedCard1(card)}>
+                          <img src={card.imageUrl} alt={card.name} className={styles.cardExchangeImage}/>
                         </div>
                       ))}
                     </div>
@@ -155,10 +170,10 @@ export const ExchangePage = ({ userCollections, wallet, accounts }: ExchangePage
                       </select>
                   </div>
                   {userCards2 && (
-                    <div className={styles.cardsContainer}>
+                    <div className={styles.cardsExchangeContainer}>
                       {userCards2.map((card) => (
-                        <div key={card.id} className={styles.card} onClick={() => setSelectedCard2(card)}>
-                          <img src={card.imageUrl} alt={card.name} className={styles.cardImage}/>
+                        <div key={card.id} className={selectedCard2 === card ? styles.cardExchangeSelected : styles.cardExchange} onClick={() => selectedCard2 === card ? setSelectedCard2(undefined) : setSelectedCard2(card)}>
+                          <img src={card.imageUrl} alt={card.name} className={styles.cardExchangeImage}/>
                         </div>
                       ))}
                     </div>

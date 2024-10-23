@@ -31,18 +31,17 @@ export const UserPage = ({ userCollections, setSelectedCardFromUserPage, changeP
 
   useEffect(() => {
     if (selectedUser) {
+      setUserCards([]);
       // Récupérer les cartes de l'utilisateur sélectionné
       const getUserCards = async () => {
         try {
           let allUserCards: Card[] = [];
           for (let collection of userCollections) {
-            const [cardNumbers, cardNames, cardImages] = await wallet?.contract.getUserCards(collection.id, selectedUser);
-            if (cardNumbers && cardNames && cardImages) {
-              console.log(`Cards from collection ${collection.id}:`, cardNumbers);
-          
+            const [cardIds, cardNames, cardImages] = await wallet?.contract.getUserCards(collection.id, selectedUser);
+            if (cardIds && cardNames && cardImages) {
               // Mapper les trois tableaux en un tableau d'objets Card
-              const mappedCards = cardNumbers.map((cardNumber: string, index: number) => ({
-                id: cardNumber,
+              const mappedCards = cardIds.map((cardId: string, index: number) => ({
+                id: cardId,
                 name: cardNames[index],
                 imageUrl: cardImages[index],
                 SetID: collection.id,

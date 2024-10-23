@@ -123,8 +123,10 @@ const MintForm = ({ selectedCard, wallet, accounts }: MintFormProps) => {
         console.log("Carte sélectionnée : ", selectedCard);
         const owners = await wallet?.contract.getCardOwners(selectedCard?.SetID, selectedCard?.id);
         if (owners) {
-          setOwners(owners);
-          console.log("Propriétaires de la carte : ", owners);
+          // Retirer les doublons et l'adresse 0
+          const uniqueOwners = [...new Set(owners)].filter(owner => owner !== '0x0000000000000000000000000000000000000000');
+          setOwners(uniqueOwners as string[]);
+          console.log("Propriétaires de la carte : ", uniqueOwners);
         }
       } catch (contractError) {
         console.log("Erreur lors de la récupération du propriétaire de la carte : ", contractError);
@@ -142,9 +144,17 @@ const MintForm = ({ selectedCard, wallet, accounts }: MintFormProps) => {
     try {
       await wallet?.contract.mintCard(selectedCard?.SetID, ethers.utils.getAddress(selectedUser), selectedCard?.id, selectedCard?.name, selectedCard?.imageUrl);
       alert("La carte a été attribuée avec succès !");
-      setOwners([...owners, selectedUser]);
+      if (!owners.includes(selectedUser)) {
+        setOwners([...owners, selectedUser]);
+      }
     } catch (contractError) {
-      console.log("Erreur lors de l'attribution de la carte : ", contractError);
+      if ((contractError as any).code === "ACTION_REJECTED") {
+        alert('Vous avez refusé la transaction.');
+      } else if ((contractError as any).message.includes("Super-admin requis.")) {
+        alert("Vous n'êtes pas autorisé à créer une collection (super-admin requis) !");
+      } else {
+        console.log(contractError);
+      }
     }
   };
 

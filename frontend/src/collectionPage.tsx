@@ -38,7 +38,7 @@ export const CollectionPage = ({ userCollections, setUserCollections, setSelecte
         const sets = await response.json();
         setAvailableSets(sets.sets);
       } catch (error) {
-        console.error('Error fetching sets:', error);
+        console.error('Erreur lors de la récupération des sets :', error);
       }
     };
 
@@ -54,7 +54,7 @@ export const CollectionPage = ({ userCollections, setUserCollections, setSelecte
         setUserCollections(collections);
         console.log('userCollections :', collections);
       } catch (error) {
-        console.error('Error fetching collections:', error);
+        console.error('Erreur lors de la récupération des collections :', error);
       }
     };
 
@@ -84,16 +84,17 @@ export const CollectionPage = ({ userCollections, setUserCollections, setSelecte
         } catch (contractError) {
           if ((contractError as any).code === "ACTION_REJECTED") {
             alert('Vous avez refusé la transaction.');
+          } else if ((contractError as any).message.includes("Super-admin requis.")) {
+            alert("Vous n'êtes pas autorisé à créer une collection (super-admin requis) !");
           } else {
             console.log(contractError);
-            //alert("Vous n'êtes pas autorisé à créer une collection (super-admin requis) !");
           }
         }
       } else if (response.status === 400) {
         alert("Le set existe déjà dans la base de données.");
       }
     } catch (error) {
-      console.error('Error creating collection:', error)
+      console.error('Erreur lors de la création de la collection :', error);
     }
     setLoading(false);
     
