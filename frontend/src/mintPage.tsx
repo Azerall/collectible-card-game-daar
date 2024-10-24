@@ -146,7 +146,7 @@ const MintForm = ({ selectedCard, wallet, accounts }: MintFormProps) => {
       if ((contractError as any).code === "ACTION_REJECTED") {
         alert('Vous avez refusé la transaction.');
       } else if ((contractError as any).message.includes("Super-admin requis.")) {
-        alert("Vous n'êtes pas autorisé à créer une collection (super-admin requis) !");
+        alert("Vous n'êtes pas autorisé à minter une carte (super-admin requis) !");
       } else {
         console.log(contractError);
       }

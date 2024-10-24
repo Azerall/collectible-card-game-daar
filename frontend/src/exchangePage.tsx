@@ -120,8 +120,8 @@ export const ExchangePage = ({ userCollections, wallet, accounts }: ExchangePage
     } catch (contractError) {
       if ((contractError as any).code === "ACTION_REJECTED") {
         alert('Vous avez refusé la transaction.');
-      } else if ((contractError as any).message.includes("Super-admin requis.")) {
-        alert("Vous n'êtes pas autorisé à créer une collection (super-admin requis) !");
+      } else if ((contractError as any).message.includes("Vous devez etre proprietaire d'une des cartes.")) {
+        alert("Vous devez être le propriétaire d'une des cartes pour effectuer un échange.");
       } else {
         console.log(contractError);
       }

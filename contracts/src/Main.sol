@@ -42,14 +42,13 @@ contract Main {
 
   // Echange deux cartes entre deux propriétaires dans une collection
   function tradeCards(string calldata collectionId1, address owner1, uint tokenId1, string calldata collectionId2, address owner2, uint tokenId2) external {
-    require(superAdmins[msg.sender], "Super-admin requis.");
+    require(owner1 == msg.sender || owner2 == msg.sender, "Vous devez etre proprietaire d'une des cartes.");
     collections[collectionId1].transferCard(owner1, owner2, tokenId1);
     collections[collectionId2].transferCard(owner2, owner1, tokenId2);
   }
 
   // Approuve un opérateur pour tous les tokens du propriétaire
   function setApprovalForAll(string calldata collectionId, address operator, bool approved) external {
-    require(superAdmins[msg.sender], "Super-admin requis.");
     collections[collectionId].setApprovalForAll(operator, approved);
   }
 
