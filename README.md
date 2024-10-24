@@ -11,11 +11,11 @@ Ce projet a été réalisée dans le cadre de l'unité d'enseignement **Dévelop
 - **Acheter et ouvrir un booster** : Les utilisateurs peuvent acheter des boosters et les ouvrir pour obtenir des cartes aléatoires.
 
 ## Configurations
-- **HardHat** : Pour gérer et déployer les contrats Solidity.
-- **Metamask** : Pour interagir avec la blockchain Ethereum.
-- **Node.js** : Pour le frontend.
-- **NPM ou Yarn** : Pour le frontend.
-- **Go** : Pour le backend, minimum **version 1.21.0** pour pouvoir supporter notre base de données SQLite.
+- `HardHat` : Pour gérer et déployer les contrats Solidity.
+- `Metamask` : Pour interagir avec la blockchain Ethereum.
+- `Node.js` : Pour le frontend.
+- `NPM ou Yarn` : Pour le frontend.
+- `Go` : Pour le backend, la version **1.21.0** est au minimum requise pour pouvoir supporter notre base de données SQLite.
 
 ## Installation
 ### Pour lancer l'application :
@@ -45,9 +45,9 @@ Ce projet a été réalisée dans le cadre de l'unité d'enseignement **Dévelop
      ```
 
 ## Configuration Super-admin et Utilisateur
-- **Se mettre en super-admin avec argent** :
+- **Se mettre en super-admin avec de l'argent virtuel** :
   - Renseigner votre adresse et clé privée Metamask dans le fichier `admins.json` pour vous autoriser à créer et minter des cartes.
 
-- **Ajouter de l'argent en tant qu'utilisateur** :
+- **Ajouter de l'argent virtuel en tant qu'utilisateur** :
   - Renseigner votre adresse et clé privée Metamask dans le fichier `users.json` pour obtenir de l'argent virtuel à utiliser dans le jeu.
 
