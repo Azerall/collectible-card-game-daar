@@ -25,11 +25,13 @@ type Booster = {
 
 interface BoosterPageProps {
   userCollections: Collection[]
+  setSelectedUserFromBoosterPage: (page: string) => void
+  changePage: (page: string) => void
   wallet: { details: ethereum.Details, contract: main.Main } | undefined
   accounts: string[] | undefined
 }
 
-export const BoosterPage = ({ userCollections, wallet, accounts }: BoosterPageProps) => {
+export const BoosterPage = ({ userCollections, setSelectedUserFromBoosterPage, changePage, wallet, accounts }: BoosterPageProps) => {
 
   const [selectedSet, setSelectedSet] = useState('');
   const [boosters, setBoosters] = useState<Booster[]>([]);
@@ -43,18 +45,19 @@ export const BoosterPage = ({ userCollections, wallet, accounts }: BoosterPagePr
       try {
         const userBoosters: Booster[] = [];
         const [boosterNames, boosterOpened] = await wallet?.contract.getBoostersOfOwner();
-        for (let i = 0; i < boosterNames.length; i++) {
-          const response = await fetch(`http://localhost:8080/booster?name=${boosterNames[i]}`, {
+        // Retirer les chaines vides
+        const filteredBoosterNames = boosterNames.filter((name: string) => name !== '');
+        for (let i = 0; i < filteredBoosterNames.length; i++) {
+          const response = await fetch(`http://localhost:8080/booster?name=${filteredBoosterNames[i]}`, {
             method: 'GET',
           });
           if (response.ok) {
             const booster = await response.json();
-            const userBooster = { name: boosterNames[i], setID: booster.booster.SetID, Cards: booster.booster.cards, isOpened: boosterOpened[i] };    
+            const userBooster = { name: filteredBoosterNames[i], setID: booster.booster.SetID, Cards: booster.booster.cards, isOpened: boosterOpened[i] };    
             userBoosters.push(userBooster);
           }
         }
         setBoosters(userBoosters);
-        console.log('Boosters de l\'utilisateur :', userBoosters);
       } catch (error) {
         console.error('Erreur lors de la récupération des sets :', error);
       }
@@ -83,6 +86,9 @@ export const BoosterPage = ({ userCollections, wallet, accounts }: BoosterPagePr
         } catch (contractError) {
           if ((contractError as any).code === "ACTION_REJECTED") {
             alert('Vous avez refusé la transaction.');
+            await fetch(`http://localhost:8080/booster?name=${booster.booster.id}`, {
+              method: 'DELETE',
+            });
           } else {
             console.log(contractError);
           }
@@ -95,6 +101,7 @@ export const BoosterPage = ({ userCollections, wallet, accounts }: BoosterPagePr
 
   // Fonction pour ouvrir un booster
   const handleOpenBooster = async (booster: Booster) => {
+    console.log('Ouverture du booster :', booster);
     try {
       await wallet?.contract.openBooster(
         extractBoosterId(booster.name),
@@ -129,27 +136,28 @@ export const BoosterPage = ({ userCollections, wallet, accounts }: BoosterPagePr
   return (
     <div className={styles.container}>
 
-      <section className={styles.section}>
+      {isBoosterOpen ? 
 
-        {isBoosterOpen ? 
-
-          (<div className="cardForm">
+        (<section className={styles.section}>
+          <div className="cardForm">
             <div className={styles.closeButton} onClick={() => openBooster(null)}>
               &#8592;
             </div>
             <h2>Vous avez obtenu :</h2>
             <div className={styles.cardsContainer}>
               {openedBooster?.Cards.map((card) => (
-                <div key={card.id} className={styles.card}>
+                <div key={card.id} className={styles.card} onClick={() => { if (accounts) { changePage("userPage"); setSelectedUserFromBoosterPage(accounts[0]); } }}>
                   <img src={card.imageUrl} alt={card.name} className={styles.cardImage}/>
                 </div>
               ))}
             </div>
-          </div>) 
-
-          :
+          </div> 
+        </section>)
+        
+        :
           
-          (<div>
+        (<div>
+          <section className={styles.section}>
             <h2>Acheter un booster d'une collection</h2>
             <div className={styles.collectionForm}>
               <select
@@ -164,35 +172,35 @@ export const BoosterPage = ({ userCollections, wallet, accounts }: BoosterPagePr
                 ))}
               </select>
               <button onClick={handleCreateBooster} className={styles.createButton} >
-                Créer
+                Acheter
               </button>
             </div>
-          </div>)}
+          </section>
 
-      </section>
-
-      <section className={styles.section}>
-        <h2>Vos boosters</h2>
-        <div className={styles.collectionGrid}>
-          {boosters.map((booster) => (
-            <div key={booster.name} className={styles.collectionItem}>
-              <img 
-                src={`https://images.pokemontcg.io/${booster.setID}/logo.png`} 
-                alt={booster.setID} 
-                className={styles.collectionImage} 
-              />
-              <p>{booster.name}</p>
-              <button
-                className={`${styles.createButton} ${booster.isOpened ? styles.disabledButton : ''}`}
-                disabled={booster.isOpened}
-                onClick={() => handleOpenBooster(booster)}
-              >
-                {booster.isOpened ? 'Ouvert' : 'Ouvrir'}
-              </button>
+          <section className={styles.section}>
+            <h2>Vos boosters</h2>
+            <div className={styles.collectionGrid}>
+              {boosters.map((booster) => (
+                <div key={booster.name} className={styles.collectionItem}>
+                  <img 
+                    src={`https://images.pokemontcg.io/${booster.setID}/logo.png`} 
+                    alt={booster.setID} 
+                    className={styles.collectionImage} 
+                  />
+                  <p>{booster.name}</p>
+                  <button
+                    className={`${styles.createButton} ${booster.isOpened ? styles.disabledButton : ''}`}
+                    disabled={booster.isOpened}
+                    onClick={() => handleOpenBooster(booster)}
+                  >
+                    {booster.isOpened ? 'Ouvert' : 'Ouvrir'}
+                  </button>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </section>
+          </section>
+        </div>)
+      }
     </div>
   );
 };

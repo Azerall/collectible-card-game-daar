@@ -70,13 +70,11 @@
 
     const [selectedCollectionFromCollectionPage, setSelectedCollectionFromCollectionPage] = useState<string>('');
     const [selectedCardFromUserPage, setSelectedCardFromUserPage] = useState<Card | undefined>(undefined);
+    const [selectedUserFromBoosterPage, setSelectedUserFromBoosterPage] = useState<string>('');
 
     useEffect(() => {
       if (!wallet) return
       console.log('Wallet', wallet)
-    } , [wallet])
-
-    useEffect(() => {
       const fetchAccounts = async () => {
         const accounts_ = await web3.eth.getAccounts()
         const allAccounts = wallet?.details.account ? [wallet.details.account.toString(), ...accounts_] : accounts_
@@ -84,12 +82,13 @@
         console.log('Accounts', allAccounts)
       }
       fetchAccounts()
-    }, [wallet])
+    } , [wallet])
     
     // Fonction pour changer de page
     const changePage = (page: string) => {
       setSelectedCollectionFromCollectionPage('');
       setSelectedCardFromUserPage(undefined);
+      setSelectedUserFromBoosterPage('');
       setPage(page);
     }
 
@@ -136,6 +135,7 @@
             <UserPage 
               userCollections={userCollections} 
               setSelectedCardFromUserPage={setSelectedCardFromUserPage}
+              selectedUserFromBoosterPage={selectedUserFromBoosterPage}
               changePage={changePage}
               wallet={wallet} 
               accounts={accounts}/> : "" }
@@ -154,7 +154,9 @@
           { page==="boosterPage"?
             <BoosterPage 
               userCollections={userCollections} 
-              wallet={wallet} 
+              setSelectedUserFromBoosterPage={setSelectedUserFromBoosterPage}
+              changePage={changePage}
+              wallet={wallet}
               accounts={accounts}/> : "" }
         </div>
         

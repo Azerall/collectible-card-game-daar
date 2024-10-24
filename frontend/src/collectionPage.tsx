@@ -52,7 +52,6 @@ export const CollectionPage = ({ userCollections, setUserCollections, setSelecte
         const response = await fetch('http://localhost:8080/collections');
         const collections = await response.json();
         setUserCollections(collections);
-        console.log('userCollections :', collections);
       } catch (error) {
         console.error('Erreur lors de la récupération des collections :', error);
       }
@@ -64,7 +63,7 @@ export const CollectionPage = ({ userCollections, setUserCollections, setSelecte
   // Fonction pour créer une collection
   const handleCreateCollection = async () => {
     if (!selectedSet) {
-      alert('Veuillez sélectionner un set.');
+      alert("Veuillez sélectionner le nom d'un set.");
       return;
     }
     setLoading(true);
@@ -110,7 +109,7 @@ export const CollectionPage = ({ userCollections, setUserCollections, setSelecte
             value={selectedSet}
             onChange={(e) => setSelectedSet(e.target.value)}
             className={styles.select}>
-            <option value="">Sélectionnez un set</option>
+            <option value="">Sélectionnez le nom d'un set</option>
             {availableSets.map((set) => (
               <option key={set[0]} value={set[0]}>
                 {set[1]}

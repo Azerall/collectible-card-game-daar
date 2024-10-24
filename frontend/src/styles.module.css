@@ -345,7 +345,3 @@ form button:hover {
 .disabledButton:hover {
   background-color: #5f5f5f;
 }
-
-.boldText {
-  font-weight: bold;
-} 

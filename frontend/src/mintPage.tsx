@@ -50,7 +50,7 @@ export const MintPage = ({ userCollections, selectedCollectionFromCollectionPage
     setSelectedCard(card);
     setIsCardOpen(!isCardOpen);
   };
-
+  
   return(
     <div>
       <div className={styles.container}>
@@ -121,7 +121,7 @@ const MintForm = ({ selectedCard, wallet, accounts }: MintFormProps) => {
           // Retirer les doublons et l'adresse 0
           const uniqueOwners = [...new Set(owners)].filter(owner => owner !== '0x0000000000000000000000000000000000000000');
           setOwners(uniqueOwners as string[]);
-          console.log("Propriétaires de la carte : ", uniqueOwners);
+          if (uniqueOwners.length) console.log("Propriétaires de la carte : ", uniqueOwners);
         }
       } catch (contractError) {
         console.log("Erreur lors de la récupération du propriétaire de la carte : ", contractError);

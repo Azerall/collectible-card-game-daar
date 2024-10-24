@@ -19,19 +19,26 @@ type Collection = {
 interface UserPageProps {
   userCollections: Collection[]
   setSelectedCardFromUserPage: React.Dispatch<React.SetStateAction<Card | undefined>>
+  selectedUserFromBoosterPage: string
   changePage: (page: string) => void
   wallet: { details: ethereum.Details, contract: main.Main } | undefined
   accounts: string[] | undefined
 }
 
-export const UserPage = ({ userCollections, setSelectedCardFromUserPage, changePage, wallet, accounts }: UserPageProps) => {
+export const UserPage = ({ userCollections, setSelectedCardFromUserPage, selectedUserFromBoosterPage, changePage, wallet, accounts }: UserPageProps) => {
 
   const [selectedUser, setSelectedUser] = useState('');
   const [userCards, setUserCards] = useState<Card[]>([]);
 
   useEffect(() => {
+    if (selectedUserFromBoosterPage) {
+      setSelectedUser(selectedUserFromBoosterPage);
+    }
+  }, []);
+
+  useEffect(() => {
+    setUserCards([]);
     if (selectedUser) {
-      setUserCards([]);
       // Récupérer les cartes de l'utilisateur sélectionné
       const getUserCards = async () => {
         try {
@@ -56,9 +63,15 @@ export const UserPage = ({ userCollections, setSelectedCardFromUserPage, changeP
         }
       };
       getUserCards();
-      console.log("Cartes de l'utilisateur ", selectedUser, userCards);
+      console.log("Cartes de l'utilisateur", selectedUser, userCards);
     }
   }, [selectedUser]);
+
+  // Fonction pour trier les cartes par ordre alphabétique
+  const sortCardsAlphabetically = () => {
+    const sortedCards = [...userCards].sort((a, b) => a.name.localeCompare(b.name));
+    setUserCards(sortedCards);
+  };
 
   return(
       <div className={styles.container}>
@@ -73,16 +86,15 @@ export const UserPage = ({ userCollections, setSelectedCardFromUserPage, changeP
                   </option>
                 ))}
               </select>
+              <button onClick={() => sortCardsAlphabetically()} className={styles.createButton}>Ranger par ordre alphabétique</button>
             </div>
-            {userCards && (
-              <div className={styles.cardsContainer}>
-                {userCards.map((card) => (
-                  <div key={card.id} className={styles.card} onClick={() => { changePage("mintPage"); setSelectedCardFromUserPage(card)}}>
-                    <img src={card.imageUrl} alt={card.name} className={styles.cardImage}/>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className={styles.cardsContainer}>
+              {userCards.map((card, index) => (
+                <div key={`${card.id}-${index}`} className={styles.card} onClick={() => { changePage("mintPage"); setSelectedCardFromUserPage(card)}}>
+                  <img src={card.imageUrl} alt={card.name} className={styles.cardImage}/>
+                </div>
+              ))}
+            </div>
         </section>
       </div>
   )
