@@ -69,7 +69,7 @@ export const UserPage = ({ userCollections, setSelectedCardFromUserPage, changeP
                 <option value="">Sélectionner un utilisateur</option>
                 {accounts?.map((account) => (
                   <option key={account} value={account}>
-                    {account}
+                    {account === wallet?.details?.account ? "(YOU) " : ""}{account}
                   </option>
                 ))}
               </select>

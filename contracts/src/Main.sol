@@ -69,39 +69,35 @@ contract Main {
   }
 
   // Fonction pour créer un booster
-  function createBooster(string calldata collectionId, uint256 cardCount, string[] calldata cardIds, string[] calldata cardNames, string[] calldata cardImages) external returns (uint256) {
+  function createBooster(string calldata boosterName, string calldata collectionId, uint256 cardCount) external {
     uint256 boosterId = boosters.length;
-    string memory boosterIdStr = Strings.toString(boosterId);
-    string memory boosterName = string(abi.encodePacked("Booster ", boosterIdStr)); 
-    boosters.push(new Booster(boosterId, boosterName, "PKM", collectionId, cardCount, cardIds, cardNames, cardImages, msg.sender));
-    return boosterId;
+    boosters.push(new Booster(boosterName, "PKM", boosterId, collectionId, cardCount, msg.sender));
   }
 
   // Fonction pour récupérer les boosters d'un utilisateur
-  function getBoostersOfOwner() external view returns (string[] memory, string[] memory, bool[] memory) {
-    string[] memory userBoosters = new string[](boosters.length);
-    string[] memory userCollectionsIds = new string[](boosters.length);
+  function getBoostersOfOwner() external view returns (string[] memory, bool[] memory) {
+    string[] memory userBoostersName = new string[](boosters.length);
     bool[] memory userOpened = new bool[](boosters.length);
     uint counter = 0;
     for (uint i = 0; i < boosters.length; i++) {
       if (boosters[i].owner() == msg.sender) {
-        userBoosters[counter] = boosters[i].boosterName();
-        userCollectionsIds[counter] = boosters[i].collectionId();
+        userBoostersName[counter] = boosters[i].boosterName();
         userOpened[counter] = boosters[i].hasBeenOpened();
         counter++;
       }
     }
-    return (userBoosters, userCollectionsIds, userOpened);
+    return (userBoostersName, userOpened);
   }
 
   // Fonction pour ouvrir un booster
-  function openBooster(uint boosterId) external {
+  function openBooster(uint boosterId, string[] calldata cardIds, string[] calldata cardNames, string[] calldata cardImages) external returns (bool) {
     Booster booster = boosters[boosterId];
     booster.openBooster();
     Collection collection = collections[booster.collectionId()];
     for (uint256 i = 0; i < booster.cardCount(); i++) {
-      (string memory id, string memory name, string memory image) = booster.cards(i);
+      (string memory id, string memory name, string memory image) = (cardIds[i], cardNames[i], cardImages[i]);
       collection.mintCard(booster.owner(), id, name, image);
     }
+    return true;
   }
 }

@@ -141,7 +141,7 @@ export const ExchangePage = ({ userCollections, wallet, accounts }: ExchangePage
                           <option value="">Sélectionner un utilisateur</option>
                           {accounts?.map((account) => (
                           <option key={account} value={account}>
-                              {account}
+                              {account === wallet?.details?.account ? "(YOU) " : ""}{account}
                           </option>
                           ))}
                       </select>
@@ -164,7 +164,7 @@ export const ExchangePage = ({ userCollections, wallet, accounts }: ExchangePage
                           <option value="">Sélectionner un utilisateur</option>
                           {accounts?.map((account) => (
                           <option key={account} value={account}>
-                              {account}
+                              {account === wallet?.details?.account ? "(YOU) " : ""}{account}
                           </option>
                           ))}
                       </select>

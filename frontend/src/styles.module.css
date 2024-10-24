@@ -334,3 +334,18 @@ form button:hover {
 
 /* boosterPage */
 
+.disabledButton {
+  padding: 8px 16px;
+  background-color: #5f5f5f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+}
+
+.disabledButton:hover {
+  background-color: #5f5f5f;
+}
+
+.boldText {
+  font-weight: bold;
+} 

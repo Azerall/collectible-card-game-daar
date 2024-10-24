@@ -79,11 +79,12 @@
     useEffect(() => {
       const fetchAccounts = async () => {
         const accounts_ = await web3.eth.getAccounts()
-        console.log('Accounts', accounts_)
-        setAccounts(accounts_)
+        const allAccounts = wallet?.details.account ? [wallet.details.account.toString(), ...accounts_] : accounts_
+        setAccounts(allAccounts);
+        console.log('Accounts', allAccounts)
       }
       fetchAccounts()
-    }, [])
+    }, [wallet])
     
     // Fonction pour changer de page
     const changePage = (page: string) => {

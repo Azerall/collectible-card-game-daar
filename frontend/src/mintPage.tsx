@@ -46,14 +46,9 @@ export const MintPage = ({ userCollections, selectedCollectionFromCollectionPage
     }
   }, []);
 
-  const openCard = (card: Card) => {
-    if (isCardOpen) {
-      setSelectedCard(null);
-      setIsCardOpen(false);
-    } else {
-      setSelectedCard(card);
-      setIsCardOpen(true);
-    }
+  const openCard = (card: Card | null) => {
+    setSelectedCard(card);
+    setIsCardOpen(!isCardOpen);
   };
 
   return(
@@ -64,7 +59,7 @@ export const MintPage = ({ userCollections, selectedCollectionFromCollectionPage
         {isCardOpen ? 
 
           (<div className="cardForm">
-            <div className={styles.closeButton} onClick={() => setIsCardOpen(false)}>
+            <div className={styles.closeButton} onClick={() => openCard(null)}>
               &#8592;
             </div>
             <h2>Attribuez cette carte</h2>
@@ -177,7 +172,7 @@ const MintForm = ({ selectedCard, wallet, accounts }: MintFormProps) => {
             <option value="">Sélectionner un utilisateur</option>
             {accounts?.map((account) => (
               <option key={account} value={account}>
-                {account}
+                {account === wallet?.details?.account ? "(YOU) " : ""}{account}
               </option>
             ))}
           </select>

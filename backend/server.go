@@ -20,10 +20,10 @@ import (
 
 // Structure pour stocker les données d'une carte
 type Card struct {
-	ID       string `gorm:"primaryKey" json:"id"` // Identifiant unique de la carte
-	Name     string `json:"name"`
-	ImageUrl string `json:"imageUrl"`
-	SetID    string // Clé étrangère vers PokemonSet
+	ID        string `gorm:"primaryKey" json:"id"` // Identifiant unique de la carte
+	Name      string `json:"name"`
+	ImageUrl  string `json:"imageUrl"`
+	SetID     string // Clé étrangère vers PokemonSet
 }
 
 // Structure pour stocker les données du set
@@ -31,6 +31,12 @@ type PokemonSet struct {
 	ID    string `json:"id"` // Identifiant unique du set
 	Name  string `json:"name"`
 	Cards []Card `gorm:"foreignKey:SetID"` // Clé étrangère vers les cartes
+}
+
+type Booster struct {
+	ID    string `json:"id"` // Identifiant unique du booster
+	SetID string // Clé étrangère vers PokemonSet
+	Cards []Card `gorm:"many2many:booster_cards" json:"cards"` // Clé étrangère vers les cartes
 }
 
 // Fonction pour récupérer le set de cartes de l'API Pokémon TCG et le sauvegarder dans la base de données
@@ -212,39 +218,107 @@ func createBoosterHandler(c *gin.Context, db *gorm.DB) {
 	c.JSON(http.StatusOK, gin.H{"message": "Booster créé avec succès", "booster": cards})
 }
 
-func createBooster(setId string, db *gorm.DB) ([]Card, error) {
-	// Recherche des cartes du set dans la base de données SQLite
-	var cardsInSet []Card
-	err := db.Where("set_id = ?", setId).Find(&cardsInSet).Error
-	if err != nil {
-		return nil, fmt.Errorf("Erreur lors de la récupération des cartes du set dans la base de données : %v", err)
-	}
+func createBooster(setId string, db *gorm.DB) (Booster, error) {
+    // Recherche des cartes du set dans la base de données
+    var cardsInSet []Card
+    err := db.Where("set_id = ?", setId).Find(&cardsInSet).Error
+    if err != nil {
+        return Booster{}, fmt.Errorf("Erreur lors de la récupération des cartes du set : %v", err)
+    }
 
-	if len(cardsInSet) == 0 {
-		return nil, fmt.Errorf("Aucune carte trouvée pour ce set dans la base de données.")
-	}
+    if len(cardsInSet) == 0 {
+        return Booster{}, fmt.Errorf("Aucune carte trouvée pour ce set dans la base de données.")
+    }
 
-	// Sélectionner aléatoirement 10 cartes du set
-	var booster []Card
-	rand.Seed(time.Now().UnixNano())
-	alreadyAdded := make(map[string]bool)
-	collectionLength := len(cardsInSet)
-	counter := 0
+    // Sélectionner aléatoirement 10 cartes du set
+    var cards []Card
+    rand.Seed(time.Now().UnixNano())
+    alreadyAdded := make(map[string]bool)
+    collectionLength := len(cardsInSet)
+    counter := 0
 
-	for counter < 10 {
-		randomIndex := rand.Intn(collectionLength)
-		selectedCard := cardsInSet[randomIndex]
+    for counter < 10 {
+        randomIndex := rand.Intn(collectionLength)
+        selectedCard := cardsInSet[randomIndex]
 
-		// Assurez-vous que chaque carte est unique dans le booster
-		if !alreadyAdded[selectedCard.ID] {
-			booster = append(booster, selectedCard)
-			alreadyAdded[selectedCard.ID] = true
-			counter++
-		}
-	}
+        // Assurez-vous que chaque carte est unique dans le booster
+        if !alreadyAdded[selectedCard.ID] {
+            cards = append(cards, selectedCard)
+            alreadyAdded[selectedCard.ID] = true
+            counter++
+        }
+    }
 
-	return booster, nil
+    var count int64
+    err = db.Model(&Booster{}).Count(&count).Error
+    if err != nil {
+        return Booster{}, fmt.Errorf("Erreur lors de la récupération du nombre de boosters : %v", err)
+    }
+
+    boosterName := fmt.Sprintf("Booster %d", count)
+
+    // Créer et enregistrer le booster avec ses cartes
+    booster := Booster{
+        ID:	   boosterName,
+        SetID: setId,
+        Cards: cards,
+    }
+
+    // Sauvegarder le booster dans la base de données
+    err = db.Create(&booster).Error
+    if err != nil {
+        return Booster{}, fmt.Errorf("Erreur lors de la création du booster : %v", err)
+    }
+
+    return booster, nil
 }
+
+// Fonction pour récupérer un booster par son nom
+func getBoosterHandler(c *gin.Context, db *gorm.DB) {
+	// Récupération du nom du booster
+	boosterName := c.Query("name")
+	var booster Booster
+	err := db.Where("id = ?", boosterName).Preload("Cards").First(&booster).Error
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Booster non trouvé"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"booster": booster})
+}
+
+// func createBooster(setId string, db *gorm.DB) ([]Card, error) {
+// 	// Recherche des cartes du set dans la base de données SQLite
+// 	var cardsInSet []Card
+// 	err := db.Where("set_id = ?", setId).Find(&cardsInSet).Error
+// 	if err != nil {
+// 		return nil, fmt.Errorf("Erreur lors de la récupération des cartes du set dans la base de données : %v", err)
+// 	}
+
+// 	if len(cardsInSet) == 0 {
+// 		return nil, fmt.Errorf("Aucune carte trouvée pour ce set dans la base de données.")
+// 	}
+
+// 	// Sélectionner aléatoirement 10 cartes du set
+// 	var booster []Card
+// 	rand.Seed(time.Now().UnixNano())
+// 	alreadyAdded := make(map[string]bool)
+// 	collectionLength := len(cardsInSet)
+// 	counter := 0
+
+// 	for counter < 10 {
+// 		randomIndex := rand.Intn(collectionLength)
+// 		selectedCard := cardsInSet[randomIndex]
+
+// 		// Assurez-vous que chaque carte est unique dans le booster
+// 		if !alreadyAdded[selectedCard.ID] {
+// 			booster = append(booster, selectedCard)
+// 			alreadyAdded[selectedCard.ID] = true
+// 			counter++
+// 		}
+// 	}
+
+// 	return booster, nil
+// }
 
 func main() {
 	// Connexion à la base de données SQLite
@@ -255,7 +329,7 @@ func main() {
 	log.Println("Connected to database")
 
 	// Migration de la structure des tables
-	db.AutoMigrate(&Card{}, &PokemonSet{})
+	db.AutoMigrate(&Card{}, &PokemonSet{}, &Booster{})
 
 	// Initialisation du routeur Gin
 	r := gin.Default()
@@ -281,6 +355,9 @@ func main() {
 	})
 	r.POST("/create-booster", func(c *gin.Context) { // Route pour créer un booster
 		createBoosterHandler(c, db)
+	})
+	r.GET("/booster", func(c *gin.Context) { // Route pour récupérer un booster par son nom
+		getBoosterHandler(c, db)
 	})
 
 	// Démarrage du serveur Gin sur le port 8080

@@ -14,29 +14,22 @@ contract Booster is ERC721, Ownable {
 
     string public boosterName;
     string public collectionId;
-    Card[] public cards;
     uint256 public cardCount;
     bool public hasBeenOpened;
 
-    constructor(uint256 _boosterId, 
-                string memory _name,
+    constructor(string memory _name,
                 string memory _symbol, 
+                uint256 _boosterId, 
                 string memory _collectionId,
-                uint256 _cardCount, 
-                string[] memory _cardIds, 
-                string[] memory _cardNames, 
-                string[] memory _cardImages,
+                uint256 _cardCount,
                 address owner) ERC721(_name, _symbol) Ownable(owner) {
         boosterName = _name;
         collectionId = _collectionId;
         cardCount = _cardCount;
-        for (uint i = 0; i < _cardCount ; i++) {
-            cards.push(Card(_cardIds[i], _cardNames[i], _cardImages[i]));
-        }
         _mint(msg.sender, _boosterId);
     }
 
-    function openBooster() external onlyOwner {
+    function openBooster() external {
         require(!hasBeenOpened);
         hasBeenOpened = true;
     }
