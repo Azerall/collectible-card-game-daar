@@ -6,12 +6,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Booster is ERC721, Ownable {
 
-    struct Card {
-        string id;
-        string name;
-        string image;
-    }
-
     string public boosterName;
     string public collectionId;
     uint256 public cardCount;
