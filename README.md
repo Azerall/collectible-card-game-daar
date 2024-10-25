@@ -5,9 +5,9 @@ Ce projet a été réalisée dans le cadre de l'unité d'enseignement **Dévelop
 
 ## Fonctionnalités
 - **Créer une collection** : Les super-admins peuvent créer des collections de cartes.
-- **Minter des cartes** : Les cartes peuvent être mintées à des utilisateurs par les super-admins.
+- **Minter des cartes** : Les super-admins peuvent mint des cartes à des utilisateurs.
 - **Visualiser les cartes des utilisateurs** : Les utilisateurs peuvent voir leurs propres cartes ainsi que celles des autres.
-- **Échanger des cartes** : Les super-admins peuvent échanger les cartes des utilisateurs.
+- **Échanger des cartes** : Les utilisateurs peuvent s'échanger leurs cartes.
 - **Acheter et ouvrir un booster** : Les utilisateurs peuvent acheter des boosters et les ouvrir pour obtenir des cartes aléatoires.
 
 ## Configurations
@@ -46,7 +46,7 @@ Ce projet a été réalisée dans le cadre de l'unité d'enseignement **Dévelop
 
 ## Configuration Super-admin et Utilisateur
 - **Se mettre en super-admin avec de l'argent virtuel** :
-  - Renseigner votre adresse et clé privée Metamask dans le fichier `admins.json` pour vous autoriser à créer et minter des cartes.
+  - Renseigner votre adresse et clé privée Metamask dans le fichier `admins.json` pour vous autoriser à créer et minter des cartes, et obtenir de l'argent virtuel à utiliser dans le jeu.
 
 - **Ajouter de l'argent virtuel en tant qu'utilisateur** :
   - Renseigner votre adresse et clé privée Metamask dans le fichier `users.json` pour obtenir de l'argent virtuel à utiliser dans le jeu.
