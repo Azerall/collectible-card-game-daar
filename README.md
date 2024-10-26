@@ -12,10 +12,9 @@ Ce projet a été réalisée dans le cadre de l'unité d'enseignement **Dévelop
 
 ## Configurations
 - `HardHat` : Pour gérer et déployer les contrats Solidity.
-- `Metamask` : Pour interagir avec la blockchain Ethereum.
-- `Node.js` : Pour le frontend.
-- `NPM ou Yarn` : Pour le frontend.
-- `Go` : Pour le backend, la version **1.21.0** est au minimum requise pour pouvoir supporter notre base de données SQLite.
+- `Metamask` : Pour interagir avec la blockchain Ethereum. Pour permettre la connexion à notre environnement local, un réseau Hardhat doit être ajouté dans Metamask avec l'URL RPC `http://localhost:8545` et le Chain ID `31337`.
+- `Node.js` ainsi que `NPM ou Yarn` : Pour la gestion des dépendances du frontend et son lancement.
+- `Go` : Pour le lancement du backend. La version **1.21.0** est au minimum requise pour pouvoir supporter notre base de données SQLite.
 
 ## Installation
 ### Pour lancer l'application :
@@ -51,3 +50,5 @@ Ce projet a été réalisée dans le cadre de l'unité d'enseignement **Dévelop
 - **Ajouter de l'argent virtuel en tant qu'utilisateur** :
   - Renseigner votre adresse et clé privée Metamask dans le fichier `users.json` pour obtenir de l'argent virtuel à utiliser dans le jeu.
 
+## Important : Patience lors des transactions Metamask
+Après chaque opération nécessitant une approbation dans Metamask, assurez-vous d’attendre la fin complète de la transaction avant de procéder à une autre action pour éviter toute incohérence ou erreur. En effet, Metamask peut prendre quelques secondes pour finaliser les opérations sur la blockchain.
